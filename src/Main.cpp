@@ -2,7 +2,6 @@
 #include "Timers.h"
 #include "Input.h"
 #include "Generator.h"
-#include "ControlRaspred.h"
 #include "EEManager.h"
 #include "RunningAverage.h"
 #include "Menu\Menu.h"
@@ -11,8 +10,6 @@
 #include "GyverEncoder.h"
 #include "RemoteControl.h"
 #include "GyverDS18.h"
-#include "FadeLamp.h"
-#include "FadeVent.h"
 #include "BlinkStrobStart.h"
 
 #include "driver/pcnt.h"
@@ -37,33 +34,61 @@
 // #define NOM_PIN_OLED_MINI_SCL 36 // номер Pin OLED 1.3" SCL
 
 // --- НАСТРОЙКА ПИНОВ ---
-#define PIN_TORCH_ON_INPUT = 12; 
-#define PIN_ARC_OK_OUTPUT   = 13; 
-#define PIN_RELAY_SELECT    = 14; 
+#define PIN_TORCH_ON_INPUT 12
+#define PIN_ARC_OK_OUTPUT 13
+#define PIN_RELAY_SELECT 14
 
-#define THC_Z_STEP_PIN      = 25; 
-#define THC_Z_DIR_PIN       = 26; 
+#define THC_Z_STEP_PIN 25
+#define THC_Z_DIR_PIN 26
 
-#define PIN_ARC_VOLTAGE_ADC = 34; 
+#define PIN_ARC_VOLTAGE_ADC 34
 
 #define DEFAULT_TIME_BOUNCE_BTN_MS 50 // Дефолтное время дребезга кнопок в милисекундах
 
-// --- НАСТРОЙКИ ДИНАМИЧЕСКОЙ СКОРОСТИ ---
-const float Kp = 2.5;                 // Коэффициент усиления скорости (подбирается экспериментально)
-const uint64_t MAX_SPEED_US = 120;    // Максимальная скорость Z (чем МЕНЬШЕ микросекунд, тем БЫСТРЕЕ)
-const uint64_t MIN_SPEED_US = 800;    // Минимальная скорость Z при мелких корректировках
+#define NOM_PIN_ENC_TOLEFT 11  // номер Pin. Энкодер. Влево
+#define NOM_PIN_ENC_TORIGHT 12 // номер Pin. Энкодер. Вправо
+#define NOM_PIN_ENC_BTN 13     // номер Pin. Энкодер. Кнопка
+#define NOM_PIN_BUZZER 39      // номер Pin. Буззер
 
+// --- НАСТРОЙКИ ДИНАМИЧЕСКОЙ СКОРОСТИ ---
+const float Kp = 2.5;              // Коэффициент усиления скорости (подбирается экспериментально)
+const uint64_t MAX_SPEED_US = 120; // Максимальная скорость Z (чем МЕНЬШЕ микросекунд, тем БЫСТРЕЕ)
+const uint64_t MIN_SPEED_US = 800; // Минимальная скорость Z при мелких корректировках
 
 #define MS_100 20  // милисекунды для моргания
 #define MS_300 20  // милисекунды для моргания
 #define MS_500 500 // милисекунды для моргания
 
-const unsigned long PIERCE_DELAY_MS = 600; 
+const unsigned long PIERCE_DELAY_MS = 600;
 
-enum THCState { IDLE, PIERCING, ACTIVE_CUTTING };
+// --- НАСТРОЙКА КАЛИБРОВКИ ВОЛЬТМЕТРА ---
+const float DIVIDER_RATIO = 100.0;     // Коэффициент ВАШЕГО делителя (Рекомендуется 1:100)
+const float ESP32_ADC_MAX_VOLTS = 2.3; // Ваш линейный предел АЦП ESP32
+
+// Настройки параметров реза в физических величинах
+const float TARGET_VOLTS = 120.0;     // Желаемое напряжение дуги (Вольты)
+const float DEADZONE_VOLTS = 2.0;     // Допуск зоны нечувствительности (+/- Вольты)
+
+
+// Автоматический пересчет в единицы АЦП при старте микроконтроллера
+const int TARGET_VOLTAGE_ADC = (int)(((TARGET_VOLTS / DIVIDER_RATIO) / ESP32_ADC_MAX_VOLTS) * 4095.0);
+const int VOLTAGE_DEADZONE   = (int)(((DEADZONE_VOLTS / DIVIDER_RATIO) / ESP32_ADC_MAX_VOLTS) * 4095.0);
+
+
+
+
+enum THCState
+{
+  IDLE,
+  PIERCING,
+  ACTIVE_CUTTING
+};
 THCState currentState = IDLE;
-unsigned long torchOnStartTime = 0;
 
+// Переменные таймера (Стандарт Arduino Core 3.x)
+hw_timer_t * zTimer = NULL;
+volatile bool stepPhase = false;
+volatile int stepDirection = 0; 
 // Определяем две шины I2C
 // TwoWire Wire2 = TwoWire(1);
 
@@ -73,11 +98,7 @@ unsigned long torchOnStartTime = 0;
 Encoder Enc(NOM_PIN_ENC_TOLEFT, NOM_PIN_ENC_TORIGHT, -1, TYPE2); // объявим энкодер класс
 
 // Переменные таймера
-hw_timer_t * zTimer = NULL;
-volatile bool stepPhase = false;
-volatile int stepDirection = 0; 
 volatile uint64_t currentTimerPeriodUs = MIN_SPEED_US; // Текущий период таймера
-
 
 #define COEF_TEMP 0.1 // коэффициент для фильтра 0.1 - 0.001, чем выше - тем резче
 
@@ -173,21 +194,14 @@ StructForMem FlashMemory;      // объявляем структуру для �
 EEManager Memory(FlashMemory); // передаём нашу переменную (фактически её адрес)
 //------------------------------------------------------------
 
-DIn BtnTurnLeft{false, DEFAULT_TIME_BOUNCE_BTN_MS};  // Кнопка. Поворотник левый
-DIn BtnTurnRight{false, DEFAULT_TIME_BOUNCE_BTN_MS}; // Кнопка. Поворотник Правый
-DIn BtnAlarm{false, DEFAULT_TIME_BOUNCE_BTN_MS};     // Кнопка. Аварийка
-DIn BtnStrob{false, DEFAULT_TIME_BOUNCE_BTN_MS};     // Кнопка. Стробоскоп
-DIn BtnEnc{false, DEFAULT_TIME_BOUNCE_BTN_MS};       // класс. Кнопка энкодера
+DIn BtnEnc{false, DEFAULT_TIME_BOUNCE_BTN_MS}; // класс. Кнопка энкодера
 
 DIn ReqDS(false, 1000, 0); // опрашивание DS
 
-AIn FilterFreqEngine, FilterFreqDriveshaft;
-AIn Joystick;
+DIn TorchOn(false, DEFAULT_TIME_BOUNCE_BTN_MS); // класс. Сигнал включения дуги
 
-FadeLampX3 FadeTurnLeft, FadeTurnRight; // класс. плавного зажигания ламп поворотников
-
-FadeVentilation FadeVentOil(MaxResolutionPWM);    // класс. Вентилятор масла
-FadeVentilation FadeVentWater1(MaxResolutionPWM); // класс. Вентилятор воды 1
+AIn AInVelocity, AInVelo;
+AIn AInArcVoltage; // Аналоговый вход. Напряжение дуги
 
 Generator Blink100x300ms;
 Generator Blink500x500ms;
@@ -202,9 +216,7 @@ bool BtnMenuUp;        // кнопка меню Вверх для Task дисп�
 bool BtnMenuDown;      // кнопка меню Вниз для Task дисплей
 bool FirstScan = true; // признак первого скана
 
-bool BeepTurn;              // выдача звука при поворотах
-bool LampTurnLeftCanStart;  // Признак, что можем включать поворотник налево
-bool LampTurnRightCanStart; // Признак, что можем включать поворотник направо
+bool BeepTurn; // выдача звука при поворотах
 
 float kkk;
 
@@ -229,13 +241,13 @@ float MapFloat(float x, float xmin, float xmax, float ymin, float ymax);
 TON TmrCicle;
 TON TmrBeepTurn;
 TON TmrTurn;              // Таймер Звука для поворота
+TON TmrPiercing;          // Таймер задержки пробивки металла
 TaskHandle_t TaskDisplay; // Задача 1
 TaskHandle_t Task2;       // Задача 2
 TaskHandle_t TaskESPNow;  // Задача ESP-NOW
 void TaskDisplayCicle(void *pvParameters);
 void Task2code(void *pvParameters);
 void TaskESPNowCicle(void *pvParameters);
-void ApplyParam(uint16_t NumScr, uint16_t NumStr, float Value, uint16_t &Param, void (CtrlRaspred::*FuncInit)(StructConstCoord), CtrlRaspred &obj, StructConstCoord Coord);
 void SaveParam(uint16_t NumScr, uint16_t NumStr); // Функция сохранения координат
 void DefaultValueInit();                          // Функция для инициализации значений по умолчанию
 //------------------------------------------------------------
@@ -263,40 +275,17 @@ void setup()
   // Serial.println(ESP.getFreeHeap());
   // Serial.println("========================================");
 
-  // установим разрешение для датчиков температур DS18
-  TempOil.setResolution(12);
-  TempWater.setResolution(12);
-  TempOutside.setResolution(12);
-  TempOil.requestTemp();     // запрос следующего измерения
-  TempWater.requestTemp();   // запрос следующего измерения
-  TempOutside.requestTemp(); // запрос следующего измерения
-
   // инициализируем номера pin на кнопках
-  BtnTurnLeft.ModePin(NOM_PIN_BTN_TURN_LEFT);   // Кнопка. Поворотник левый
-  BtnTurnRight.ModePin(NOM_PIN_BTN_TURN_RIGHT); // Кнопка. Поворотник Правый
-  BtnAlarm.ModePin(NOM_PIN_BTN_ALARM);          // Кнопка. Аварийка
-  BtnStrob.ModePin(NOM_PIN_BTN_STROB);          // Кнопка. Стробоскоп
-  BtnEnc.ModePin(NOM_PIN_ENC_BTN);              // Кнопка. Энкодера"
+  BtnEnc.ModePin(NOM_PIN_ENC_BTN); // Кнопка. Энкодера"
   Enc.setTickMode(AUTO);
   BuzzerWarning.Init(1000, 1000, 4);
 
-  FilterFreqEngine._KoeffFiltr = 3000;
-  FilterFreqDriveshaft._KoeffFiltr = 3000;
+  AInArcVoltage.Init(13, 5000, 0, 8192, 1, 100); // AIn::Init(byte NoPin, uint16_t _KoeffFiltr, uint16_t MinADC, uint16_t MaxADC, uint16_t MinTech, uint16_t MaxTech)
+  AInArcVoltage.InitUnreliability(8190, 10);
+
   setCpuFrequencyMhz(240);
 
   ReservMemoryForScrDisplay();
-
-  // Настройка каналов ШИМ
-  ledcSetup(0, freq, resolution);        // Канал 0
-  ledcAttachPin(NOM_PIN_FAN_OIL, 0);     // Привязка пина к каналу
-  ledcSetup(1, freq, resolution);        // Канал 1
-  ledcAttachPin(NOM_PIN_FAN_WATER_1, 1); // Привязка пина к каналу
-  // ledcSetup(2, freq, resolution);        // Канал 2
-  // ledcAttachPin(NOM_PIN_FAN_WATER_2, 2);     // Привязка пина к каналу
-  // ledcSetup(3, freq, resolution);            // Канал 3
-  // ledcAttachPin(NOM_PIN_DOUT_TURN_LEFT, 3);  // Привязка пина к каналу
-  // ledcSetup(4, freq, resolution);            // Канал 4
-  // ledcAttachPin(NOM_PIN_DOUT_TURN_RIGHT, 4); // Привязка пина к каналу
 
   EEPROM.begin(512);             // резервируем блок во флэш памяти
   DefaultValueInit();            // Функция для инициализации значений по умолчанию
@@ -316,12 +305,19 @@ void setup()
   //------------------------------------------------------------
   // Инициализация Pin и другого
   //------------------------------------------------------------
-  pinMode(NOM_PIN_BLUE_LED, OUTPUT);         // выход Синий светодиод
-  pinMode(NOM_PIN_BUZZER, OUTPUT);           // Выход. Буззер
-  pinMode(NOM_PIN_DOUT_STROB_LEFT, OUTPUT);  // Выход.
-  pinMode(NOM_PIN_DOUT_STROB_RIGHT, OUTPUT); // Выход.
-  pinMode(NOM_PIN_DOUT_TURN_LEFT, OUTPUT);   // Выход.
-  pinMode(NOM_PIN_DOUT_TURN_RIGHT, OUTPUT);  // Выход.
+
+  TorchOn.ModePin(PIN_TORCH_ON_INPUT); // Кнопка. Энкодера"
+  pinMode(NOM_PIN_BLUE_LED, OUTPUT);   // выход Синий светодиод
+  pinMode(NOM_PIN_BUZZER, OUTPUT);     // Выход. Буззер
+  pinMode(PIN_ARC_OK_OUTPUT, OUTPUT);
+  pinMode(PIN_RELAY_SELECT, OUTPUT);
+  pinMode(THC_Z_STEP_PIN, OUTPUT);
+  pinMode(THC_Z_DIR_PIN, OUTPUT);
+
+  digitalWrite(PIN_ARC_OK_OUTPUT, LOW);
+  digitalWrite(PIN_RELAY_SELECT, LOW);
+  digitalWrite(THC_Z_STEP_PIN, LOW);
+
 
   // //  Инициализируем шины
   // Wire2.begin(NOM_PIN_OLED_SDA, NOM_PIN_OLED_SCL);          // SDA, SCL для первой шины
@@ -377,19 +373,59 @@ void setup()
 //------------------------------------------------------------
 // обработчик прерываний по таймеру для формирования импульсов на шаговом двигателе
 //------------------------------------------------------------
-void IRAM_ATTR onTimer() {
-  if (stepDirection == 0) return;
-  
-  if (!stepPhase) {
+void IRAM_ATTR onTimer()
+{
+  if (stepDirection == 0)
+    return;
+
+  if (!stepPhase)
+  {
     digitalWrite(THC_Z_DIR_PIN, stepDirection == 1 ? HIGH : LOW);
     digitalWrite(THC_Z_STEP_PIN, HIGH);
     stepPhase = true;
-  } else {
+  }
+  else
+  {
     digitalWrite(THC_Z_STEP_PIN, LOW);
     stepPhase = false;
   }
 }
 
+//============================================================
+// Функция настройки таймера прерывания для подсчета об/мин двигателя и карданного вала
+//============================================================
+void setup_timer_hardware()
+{
+
+  // === ИСПРАВЛЕННЫЙ СИНТАКСИС ДЛЯ СТАРОГО ЯДРА ESP32 (2.x.x) ===
+  // Номер таймера 0, делитель 80 (80 МГц / 80 = 1 МГц, т.е. 1 тик = 1 мкс), считать вверх = true
+  zTimer = timerBegin(0, 80, true); 
+  
+  // Привязываем функцию прерывания к таймеру, тип прерывания по фронту = true
+  timerAttachInterrupt(zTimer, &onTimer, true);
+  
+  // Устанавливаем первоначальный интервал (в тиках/мкс) и включаем автоперезапуск = true
+  timerAlarmWrite(zTimer, MIN_SPEED_US, true);
+  
+  // Активируем таймер (в старых версиях это обязательная отдельная функция)
+  timerAlarmEnable(zTimer);
+
+  // timer_config_t config = {
+  //     .alarm_en = TIMER_ALARM_EN,
+  //     .counter_en = TIMER_PAUSE,
+  //     .counter_dir = TIMER_COUNT_UP,
+  //     .auto_reload = TIMER_AUTORELOAD_EN,
+  //     .divider = 80 // 1 тик = 1 мкс при 80 МГц
+  // };
+
+  // timer_init(TIMER_GROUP_0, TIMER_0, &config);
+  // // Устанавливаем порог срабатывания для таймера двигателя(например, через 5 секунд)
+  // timer_set_alarm_value(TIMER_GROUP_0, TIMER_0, TIME_RPM_RESET);
+  // timer_enable_intr(TIMER_GROUP_0, TIMER_0);
+  // timer_isr_callback_add(TIMER_GROUP_0, TIMER_0, timer_isr_engine, NULL, 0);
+  // timer_start(TIMER_GROUP_0, TIMER_0);
+}
+//============================================================
 
 //------------------------------------------------------------
 // Функция циклически вызываемая по приоритету
@@ -398,23 +434,12 @@ void TaskDisplayCicle(void *pvParameters)
 {
   for (;;)
   {
- 
 
     //  Переложим на другие экраны
     Screens[0][0].Param = Screens[1][0].Param = Ref.TOil;    // Температура масла
     Screens[1][0].QualityParam = Screens[0][0].QualityParam; // Качество. Температура масла
     Screens[0][1].Param = Screens[2][0].Param = Ref.TWater;  // Температура воды
     Screens[2][0].QualityParam = Screens[0][1].QualityParam; // Качество. Температура воды
-
-    //  Переложим значения с экрана в функцию управления вентилятором
-    FadeVentOil.TemperatureStart = Ref.TOilVentStart;
-    FadeVentOil.TemperatureStop = Ref.TOilVentStop;
-    FadeVentOil.MaxTemperature = Ref.TOilTMaxRPM;
-    FadeVentOil.MinRPMStart = Ref.TOilMinRPMStart;
-    FadeVentWater1.TemperatureStart = Ref.TWaterVent1Start;
-    FadeVentWater1.TemperatureStop = Ref.TWaterVent1Stop;
-    FadeVentWater1.MaxTemperature = Ref.TWaterVent1TMaxRPM;
-    FadeVentWater1.MinRPMStart = Ref.TWaterVent1MinRPMStart;
 
     ArrScr.RefreshData(BtnMenuOk, BtnMenuDown, BtnMenuUp);
     if (BtnMenuOk)
@@ -570,172 +595,99 @@ void OnDataRecv(const uint8_t *MACAddr, const uint8_t *incomingData, int len)
 /*************************************************************************************/
 
 //============================================================
-// Функция настройки таймера прерывания для подсчета об/мин двигателя и карданного вала
-//============================================================
-void setup_timer_hardware()
-{
-  timer_config_t config = {
-      .alarm_en = TIMER_ALARM_EN,
-      .counter_en = TIMER_PAUSE,
-      .counter_dir = TIMER_COUNT_UP,
-      .auto_reload = TIMER_AUTORELOAD_EN,
-      .divider = 80 // 1 тик = 1 мкс при 80 МГц
-  };
-
-  timer_init(TIMER_GROUP_0, TIMER_0, &config);
-  timer_init(TIMER_GROUP_0, TIMER_1, &config);
-
-  // Устанавливаем порог срабатывания для таймера двигателя(например, через 5 секунд)
-  timer_set_alarm_value(TIMER_GROUP_0, TIMER_0, TIME_RPM_RESET);
-  timer_enable_intr(TIMER_GROUP_0, TIMER_0);
-  timer_isr_callback_add(TIMER_GROUP_0, TIMER_0, timer_isr_engine, NULL, 0);
-  timer_start(TIMER_GROUP_0, TIMER_0);
-
-  // Устанавливаем порог срабатывания для таймера карданного вала(например, через 5 секунд)
-  timer_set_alarm_value(TIMER_GROUP_0, TIMER_1, TIME_RPM_RESET);
-  timer_enable_intr(TIMER_GROUP_0, TIMER_1);
-  timer_isr_callback_add(TIMER_GROUP_0, TIMER_1, timer_isr_driveshaft, NULL, 0);
-  timer_start(TIMER_GROUP_0, TIMER_1);
-}
-//============================================================
-
-//============================================================
-// Универсальная функция настройки PCNT
-//============================================================
-void setup_pcnt(pcnt_unit_t unit, int pulse_pin, const char *name)
-{
-  // Настройка PCNT
-  pcnt_config_t config = {
-      .pulse_gpio_num = pulse_pin,
-      .ctrl_gpio_num = PCNT_PIN_NOT_USED,
-      .lctrl_mode = PCNT_MODE_KEEP,
-      .hctrl_mode = PCNT_MODE_KEEP,
-      .pos_mode = PCNT_COUNT_INC,
-      .neg_mode = PCNT_COUNT_DIS,
-      .counter_h_lim = 100, // Важно: прерывание на 1 импульсе
-      .counter_l_lim = 0,
-      .unit = unit,
-      .channel = PCNT_CHANNEL_0};
-
-  esp_err_t err = pcnt_unit_config(&config);
-  if (err != ESP_OK)
-  {
-    Serial.printf("ERROR: pcnt_unit_config failed for %s: %d\n", name, err);
-    while (1)
-      ;
-  }
-
-  // 4. ВАЖНО: Настраиваем фильтр ДО установки значений
-  pcnt_set_filter_value(unit, 1000);
-  pcnt_filter_enable(unit);
-
-  // 5. Установка пороговых значений для прерываний
-  pcnt_set_event_value(unit, PCNT_EVT_THRES_1, 1);
-
-  // 6. Включение событий для прерываний
-  pcnt_event_enable(unit, PCNT_EVT_THRES_1);
-
-  // 7. Отключаем лишние прерывания
-  pcnt_event_disable(unit, PCNT_EVT_ZERO);
-
-  // 8. Включение прерываний для этого юнита
-  err = pcnt_intr_enable(unit);
-  if (err != ESP_OK)
-  {
-    Serial.printf("ERROR: pcnt_intr_enable failed for %s: %d\n", name, err);
-    while (1)
-      ;
-  }
-  // 9. ПРАВИЛЬНЫЙ запуск счетчика: пауза -> очистка -> запуск
-  pcnt_counter_pause(unit);
-  pcnt_counter_clear(unit);
-  pcnt_counter_resume(unit);
-
-  // 10. Дополнительно: настраиваем пин как вход
-  pinMode(pulse_pin, INPUT_PULLDOWN);
-
-  Serial.printf("PCNT %s ready on GPIO %d\n", name, pulse_pin);
-}
-
-//============================================================
-// Инициализация всех PCNT модулей
-//============================================================
-void setup_all_pcnts()
-{
-  // Настраиваем модуль двигателя
-  setup_pcnt(PCNT_UNIT_ENGINE, PIN_PULSE_ENGINE, "Engine");
-
-  // Настраиваем модуль карданного вала
-  setup_pcnt(PCNT_UNIT_DRIVESHAFT, PIN_PULSE_DRIVESHAFT, "DRIVESHAFT");
-
-  // Регистрируем ОДИН обработчик прерываний для всех модулей
-  esp_err_t err = pcnt_isr_register(pcnt_isr_handler, NULL, 0, NULL);
-  if (err != ESP_OK)
-  {
-    Serial.printf("ERROR: pcnt_isr_register failed: %d\n", err);
-    while (1)
-      ;
-  }
-  Serial.println("\n=== SYSTEM READY ===");
-}
-
-//============================================================
-// Функция. Подсчет об/мин
-//============================================================
-float CountRPM(const volatile uint64_t &measuredInterval, volatile bool &dataAvailable, AIn &FilterFreq)
-{
-  uint64_t intervalLocal;
-  bool availableLocal;
-
-  noInterrupts();
-  intervalLocal = measuredInterval;
-  availableLocal = dataAvailable;
-  interrupts();
-  dataAvailable = false;
-
-  // Serial.println("\n=== VALID MEASUREMENT ===");
-  // Serial.printf("Счетчик:             %u\n", CountImpulseEngine);
-  // Serial.printf("measuredInterval:    %llu microseconds\n", measuredInterval);
-  // Serial.printf("measuredInterval:    %.4f milliseconds\n", measuredInterval / 1000.0);
-
-  float FreqRotate;
-  float RPM;
-
-  if (availableLocal && intervalLocal != 0ULL)
-  {
-    FreqRotate = 1000.0 / (measuredInterval / 1000.0);
-    RPM = FilterFreq.Filtr1th(FreqRotate * 60.0);
-  }
-  else
-  {
-    FreqRotate = 0.0;
-    RPM = 0.0;
-  }
-
-  // Serial.printf("Частота:             %.4f Hz\n", FreqRotate);
-  // Serial.printf("RPM:                 %.4f об/мин \n", RPM);
-
-  // Serial.println("=========================\n");
-  return RPM;
-}
-
-//============================================================
 // Вызов функции циклически
 //============================================================
 void Task2code(void *pvParameters)
 {
   setup_timer_hardware(); // инициализация таймеров прерывания
-  setup_all_pcnts();      // инициализация PCNT
 
   for (;;)
   {
     TestLive();
 
-    // опросим кнопки
-    BtnTurnLeft.ReadDIn();
-    BtnTurnRight.ReadDIn();
-    BtnAlarm.ReadDIn();
-    BtnStrob.ReadDIn();
+    bool torchOnSignal = TorchOn.ReadDIn(); // Считываем сигнал включения дуги
+
+    TmrPiercing.TONTmr(currentState == PIERCING, PIERCE_DELAY_MS); // Запускаем таймер задержки после пробивки металла
+
+    switch (currentState)
+    {
+    case IDLE:
+      if (torchOnSignal) // Если сигнал включения дуги появился, то переходим в состояние пробивки металла
+      {
+        digitalWrite(PIN_RELAY_SELECT, HIGH); // Мгновенно забираем контроль над Z у FluidNC
+        //delay(15);
+        currentState = PIERCING;
+      }
+      break;
+
+    case PIERCING: // 
+      if (!torchOnSignal) // Если сигнал включения дуги пропал, то возвращаемся в состояние ожидания
+      {
+        currentState = IDLE;
+        digitalWrite(PIN_RELAY_SELECT, LOW);
+        break;
+      }
+
+      if (TmrPiercing.Q) // Если таймер задержки после пробивки металла сработал
+      {
+        digitalWrite(PIN_ARC_OK_OUTPUT, HIGH); // Металл пробит -> FluidNC поехал по X/Y
+        currentState = ACTIVE_CUTTING;         //
+      }
+      break;
+
+    case ACTIVE_CUTTING:
+      if (!torchOnSignal) // Если сигнал включения дуги пропал, то возвращаемся в состояние ожидания
+      {
+        stepDirection = 0;
+        digitalWrite(PIN_ARC_OK_OUTPUT, LOW);
+        digitalWrite(PIN_RELAY_SELECT, LOW); // Отдаем Z обратно FluidNC для холостых переездов
+        currentState = IDLE;
+        break;
+      }
+
+      // Получаем отфильтрованное значение напряжения дуги
+      int currentArcVoltage = AInArcVoltage.Value();
+
+      int voltageError = currentArcVoltage - TARGET_VOLTAGE_ADC;
+
+      if (abs(voltageError) <= VOLTAGE_DEADZONE)
+      {
+        stepDirection = 0; // Напряжение в допуске, удерживаем высоту
+      }
+      else
+      {
+        // Задаем направление (Высокое напряжение = длинная дуга = едем ВНИЗ)
+        if (voltageError > 0)
+        {
+          stepDirection = -1;
+        }
+        else
+        {
+          stepDirection = 1;
+        }
+
+        // P-регулятор скорости: расчет периода таймера в зависимости от величины отклонения
+        long calculatedPeriod = MIN_SPEED_US - (abs(voltageError) * Kp);
+
+        if (calculatedPeriod < (long)MAX_SPEED_US)
+        {
+          currentTimerPeriodUs = MAX_SPEED_US;
+        }
+        else if (calculatedPeriod > (long)MIN_SPEED_US)
+        {
+          currentTimerPeriodUs = MIN_SPEED_US;
+        }
+        else
+        {
+          currentTimerPeriodUs = (uint32_t)calculatedPeriod;
+        }
+
+        // Обновляем интервал шагов Z на лету
+       timerAlarmWrite(zTimer, currentTimerPeriodUs, true);
+      }
+      break;
+    }
+
     BtnEnc.ReadDIn();
     // Enc.tick(); // вызываем функцию считывания показаний энкодера
 
@@ -746,66 +698,6 @@ void Task2code(void *pvParameters)
       BtnMenuOk = true;
       // Serial.print("BtnMenuOk = ");
       // Serial.println(BtnMenuOk);
-    }
-
-    if (dataAvailableEngine)
-    {
-      // Вызов функции подсчета об/мин для двигателя
-      Screens[0][3].Param = Ref.RPMEngine = CountRPM(measuredIntervalEngine, dataAvailableEngine, FilterFreqEngine);
-      // Serial.print("Ref.RPMEngine = ");
-      // Serial.println(Ref.RPMEngine);
-    }
-    if (dataAvailableDriveshaft)
-    { // Вызов функции подсчета об/мин для двигателя
-      // диаметр колеса в см умножаем на 60/10000 (60 минут в часе, 100000см в км )
-      Ref.VelocityKoefReduction = 3.5;
-      Screens[0][4].Param = Ref.Velosity = Ref.VelocityDiamWheel * 0.0006 * CountRPM(measuredIntervalDriveshaft, dataAvailableDriveshaft, FilterFreqDriveshaft) / Ref.VelocityKoefReduction;
-      // Serial.print("Ref.Velosity = ");
-      // Serial.println(Ref.Velosity);
-    }
-
-    // При старте запуск моргания стробоскопов, поворотников
-    BlinkStrobTurn.Blink();
-
-    // Поворотники
-    if (!BlinkTurn.Q and !BlinkStrobTurn.BlinkStart) // если Лампа повортников выключена
-    {
-      if (BtnTurnLeft.Q) // если Нажата кнопка поворот налево
-      {
-        LampTurnLeftCanStart = true; // запоминаем что можем включать поворотник налево
-      }
-      else // если не Нажата кнопка поворот налево
-      {
-        LampTurnLeftCanStart = false; // сбрасываем что можем включать поворотник налево
-      }
-      if (BtnTurnRight.Q) // если Нажата кнопка поворот направо
-      {
-        LampTurnRightCanStart = true; // запоминаем что можем включать поворотник направо
-      }
-      else // если не Нажата кнопка поворот направо
-      {
-        LampTurnRightCanStart = false; // сбрасываем что можем включать поворотник направо
-      }
-      if (BtnAlarm.Q) // если Нажата кнопка Аварийка
-      {
-        LampTurnLeftCanStart = true;  // запоминаем что можем включать поворотник налево
-        LampTurnRightCanStart = true; // запоминаем что можем включать поворотник направо
-      }
-    }
-
-    BlinkTurn.CmdReset = !LampTurnLeftCanStart and !LampTurnRightCanStart; // если не включены, сбрасываем флаг моргания
-
-    BlinkTurn.Blink(Ref.TimeTurnOff, Ref.TimeTurnOn);
-
-    TmrBeepTurn.TONTmr(BlinkTurn.Q, Ref.TimeTurnOnBuzzer); // Таймер выдачи звука при работе поворотников
-
-    if ((!TmrBeepTurn.Q and BlinkTurn.Q) and (LampTurnLeftCanStart or LampTurnRightCanStart))
-    {
-      BeepTurn = true;
-    }
-    else
-    {
-      BeepTurn = false;
     }
 
     //------------------------------------------------------------
@@ -834,7 +726,7 @@ void Task2code(void *pvParameters)
     DOut();
     //------------------------------------------------------------
     FirstScan = false; // признак первого скана
-    delay(50);
+    delay(5);
   }
   vTaskDelete(NULL);
 }
@@ -849,18 +741,6 @@ void DOut()
 
   // Выход активного Буззера
   digitalWrite(NOM_PIN_BUZZER, (BeepTurn and !BlinkStrobTurn.BlinkStart) or BlinkStrobTurn.BuzzerOn);
-
-  // Выход левого поворотника
-  digitalWrite(NOM_PIN_DOUT_TURN_LEFT, (BlinkStrobTurn.BlinkStart and BlinkStrobTurn.TurnOn) or (LampTurnLeftCanStart and BlinkTurn.Q and !BlinkStrobTurn.BlinkStart));
-
-  // Выход правого поворотника
-  digitalWrite(NOM_PIN_DOUT_TURN_RIGHT, (BlinkStrobTurn.BlinkStart and BlinkStrobTurn.TurnOn) or (!BlinkStrobTurn.BlinkStart and BlinkTurn.Q and LampTurnRightCanStart));
-
-  // Выход левого стробоскопа
-  digitalWrite(NOM_PIN_DOUT_STROB_LEFT, (!BlinkStrobTurn.BlinkStart and BtnStrob.Q and !LampTurnLeftCanStart and !LampTurnRightCanStart) or (BlinkStrobTurn.BlinkStart and BlinkStrobTurn.StrobOn));
-
-  // Выход правого стробоскопа
-  digitalWrite(NOM_PIN_DOUT_STROB_RIGHT, (!BlinkStrobTurn.BlinkStart and BtnStrob.Q and !LampTurnLeftCanStart and !LampTurnRightCanStart) or (BlinkStrobTurn.BlinkStart and BlinkStrobTurn.StrobOn));
 }
 
 //------------------------------------------------------------
@@ -1009,29 +889,6 @@ void SaveParam(uint16_t NumScr, uint16_t NumStr)
   }
 }
 //------------------------------------------------------------
-
-//------------------------------------------------------------
-// Функция применения координат
-//------------------------------------------------------------
-void ApplyParam(uint16_t NumScr, uint16_t NumStr, float Value, uint16_t &Param, void (CtrlRaspred::*FuncInit)(StructConstCoord), CtrlRaspred &obj, StructConstCoord Coord)
-{
-  bool &ExitApplyCalibr = Screens[NumScr][NumStr].ExitFromParam; // объявим ссылку - что вышли из параметра
-  bool &ApplyCalibr = Screens[NumScr][NumStr].BoolParam;         // объявим ссылку - переменная сохранения
-
-  if (ExitApplyCalibr and ApplyCalibr) // при выходе из параметра и сохранении
-  {
-    ExitApplyCalibr = false; // сбросим что вышли из параметра
-    ApplyCalibr = false;     // сбросим переменную сохранения
-    Param = (uint16_t)Value;
-    Serial.print("=Установили значение:");
-    Serial.println(Param);
-    (obj.*FuncInit)(Coord);
-  }
-  else if (ExitApplyCalibr) // при выходе из параметра без сохранения
-  {
-    ExitApplyCalibr = false; // сбросим что вышли из параметра
-  }
-}
 
 //------------------------------------------------------------
 // Функция Map для типа float
