@@ -166,7 +166,7 @@ volatile uint64_t currentTimerPeriodUs = MIN_SPEED_US; // Текущий пер�
 // глобальные переменные
 //------------------------------------------------------------
 
-Screen ArrScr(7); // класс экранов
+Screen ArrScr(3); // класс экранов
 
 //------------------------------------------------------------
 // Структура запоминаемых данных
@@ -336,6 +336,7 @@ void setup()
 
   AInArcVoltage.Init(PIN_ARC_VOLTAGE_ADC, 5000, 0, 8192, 1, 100); // AIn::Init(byte NoPin, uint16_t _KoeffFiltr, uint16_t MinADC, uint16_t MaxADC, uint16_t MinTech, uint16_t MaxTech)
   AInArcVoltage.InitUnreliability(8190, 10);
+
 
   setCpuFrequencyMhz(240);
 
