@@ -1,63 +1,10 @@
-// #include <Arduino.h>
-
-// const int THC_Z_STEP_PIN = 16;
-// const int THC_Z_DIR_PIN  = 17;
-
-// hw_timer_t * zTimer = NULL;
-// volatile bool stepPhase = false;
-
-// void IRAM_ATTR onTimer() {
-//   if (!stepPhase) {
-//     digitalWrite(THC_Z_STEP_PIN, HIGH);
-//     stepPhase = true;
-//   } else {
-//     digitalWrite(THC_Z_STEP_PIN, LOW);
-//     stepPhase = false;
-//   }
-// }
-
-// void setup() {
-//   pinMode(THC_Z_STEP_PIN, OUTPUT);
-//   pinMode(THC_Z_DIR_PIN, OUTPUT);
-//   digitalWrite(THC_Z_DIR_PIN, HIGH);
-
-//   // Для ESP32-S2 пробуем изменить индекс таймера на 1 или 2
-//   // И ставим экспериментальный делитель 40 (если базовая частота XTAL = 40МГц)
-//   zTimer = timerBegin(1, 40, true);
-
-//   timerAttachInterrupt(zTimer, &onTimer, true);
-
-//   // Жестко фиксируем 120 мкс
-//   timerAlarmWrite(zTimer, 120, true);
-//   timerAlarmEnable(zTimer);
-// }
-
-// void loop() {
-//   // Чтобы loop() на ОДНОЯДЕРНОМ S2 не забивал процессор, даем операционной системе "дышать"
-//   // Это уберет хаотичные прыжки частоты
-//  // delay(10);
-// }
-
-// #include <Arduino.h>
-
-// const int THC_Z_STEP_PIN = 16;
-
-// void setup() {
-//   // Настраиваем ШИМ-канал 0 на частоту 4166 Гц (эквивалент 120 мкс)
-//   // Разрядность 8 бит (значения 0-255)
-//   ledcSetup(0, 4166, 8);
-
-//   // Привязываем GPIO25 к ШИМ-каналу 0
-//   ledcAttachPin(THC_Z_STEP_PIN, 0);
-
-//   // Включаем заполнение 50% (меандр), т.е. 128 из 255
-//   ledcWrite(0, 128);
-// }
-
-// void loop() {
-//   // Процессор полностью свободен, частота генерируется железом чипа
-// }
-
+/**************************************************************************************
+ *  ESP32-S2 — реципрокный частотомер на PCNT + esp_timer
+ *
+ *  Принцип: PCNT считает N импульсов -> событие H_LIM -> в ISR снимается метка времени.
+ *  f = (P2 - P1) * 1e6 / (t2 - t1), где t1,t2 взяты НА ФРОНТАХ импульсов.
+ *  Никакого опроса сырого регистра, никаких потерь на переполнении.
+ **************************************************************************************/
 #include <Arduino.h>
 #include "Timers.h"
 #include "Input.h"
@@ -73,27 +20,32 @@
 #include "BlinkStrobStart.h"
 #include "FastAccelStepper.h"
 
+#include <Arduino.h>
 #include "driver/pcnt.h"
 #include "esp_timer.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/semphr.h"
-#include "soc/pcnt_struct.h"
-#include "driver/timer.h"
 
 //------------------------------------------------------------
 // константы определенные препроцессором
 //------------------------------------------------------------
+// ------------------------------------------------------------------ КОНФИГ
+#define PIN_PULSE 7               // вход импульсов
+#define PCNT_UNIT_ENG PCNT_UNIT_0 // на S2 доступны 0..3
+
+#define PULSES_PER_REV 1.0f     // импульсов на оборот
+#define TARGET_WINDOW_US 100000 // целевое окно измерения, мкс (100 мс)
+#define N_MIN 1                 // на низких частотах меряем период в период
+#define N_MAX 20000
+#define FILTER_TICKS 80              // 80 тиков APB = 1 мкс; 0 = выкл, макс 1023
+#define PULL_MODE GPIO_PULLDOWN_ONLY // open-collector -> PULLUP, push-pull -> FLOATING
+#define EDGE_NEG_MODE PCNT_COUNT_DIS // PCNT_COUNT_INC = считать оба фронта
+
+#define PRINT_MS 250
+#define TIMEOUT_US 1000000 // нет событий 1 с -> частота 0
+#define EMA_ALPHA 0.0f     // 0 = без сглаживания, 0.2..0.3 = мягче
+
 #define INIT_KEY 6 // ключ первого запуска. 0-254, на выбор
 
 #define NOM_PIN_BLUE_LED 15 // номер Pin Синий светодиод
-
-// #define NOM_PIN_OLED_SDA 35 // номер Pin OLED 2.4" SDA
-// #define NOM_PIN_OLED_SCL 37 // номер Pin OLED 2.4" SCL
-
-// #define NOM_PIN_OLED_MINI_SDA 38 // номер Pin OLED 1.3" SDA
-// #define NOM_PIN_OLED_MINI_SCL 36 // номер Pin OLED 1.3" SCL
-
 // --- НАСТРОЙКА ПИНОВ ---
 #define PIN_TORCH_ON_INPUT 34
 #define PIN_ARC_OK_OUTPUT 35
@@ -101,7 +53,6 @@
 
 #define THC_Z_STEP_PIN 16
 #define THC_Z_DIR_PIN 17
-
 #define PIN_ARC_VOLTAGE_ADC 1
 
 #define DEFAULT_TIME_BOUNCE_BTN_MS 50 // Дефолтное время дребезга кнопок в милисекундах
@@ -111,32 +62,9 @@
 #define NOM_PIN_ENC_BTN 3     // номер Pin. Энкодер. Кнопка
 #define NOM_PIN_BUZZER 4      // номер Pin. Буззер
 
-// --- НАСТРОЙКИ ДИНАМИЧЕСКОЙ СКОРОСТИ ---
-const float Kp = 2.5;              // Коэффициент усиления скорости (подбирается экспериментально)
-const uint64_t MAX_SPEED_US = 120; // Максимальная скорость Z (чем МЕНЬШЕ микросекунд, тем БЫСТРЕЕ)
-const uint64_t MIN_SPEED_US = 800; // Минимальная скорость Z при мелких корректировках
-
 #define MS_100 20  // милисекунды для моргания
 #define MS_300 20  // милисекунды для моргания
 #define MS_500 500 // милисекунды для моргания
-
-const unsigned long PIERCE_DELAY_MS = 600;
-
-// --- НАСТРОЙКА КАЛИБРОВКИ ВОЛЬТМЕТРА ---
-const float DIVIDER_RATIO = 100.0;     // Коэффициент ВАШЕГО делителя (Рекомендуется 1:100)
-const float ESP32_ADC_MAX_VOLTS = 2.3; // Ваш линейный предел АЦП ESP32
-
-// Настройки параметров реза в физических величинах
-const float TARGET_VOLTS = 120.0; // Желаемое напряжение дуги (Вольты)
-const float DEADZONE_VOLTS = 2.0; // Допуск зоны нечувствительности (+/- Вольты)
-
-// Настройки допуска и скорости
-const int CENTER_VAL = 2048; // Центральная точка (12-бит АЦП: 0 - 4095)
-const int TOLERANCE = 100;   // Допуск (зона нечувствительности)
-const int MAX_SPEED = 4000;  // Максимальная скорость мотора (шагов/сек)
-
-uint16_t FregTest;
-bool TempBool;
 
 enum THCState
 {
@@ -145,22 +73,13 @@ enum THCState
   ACTIVE_CUTTING
 };
 THCState currentState = IDLE;
+uint16_t FregTest;
+// Настройки допуска и скорости
+const int CENTER_VAL = 140; // Центральная точка (12-бит АЦП: 0 - 4095)
+const int TOLERANCE = 3;   // Допуск (зона нечувствительности)
+const int MAX_SPEED = 4000;  // Максимальная скорость мотора (шагов/сек)
 
-// Переменные таймера (Стандарт Arduino Core 3.x)
-
-volatile int stepDirection = 0;
-// Определяем две шины I2C
-// TwoWire Wire2 = TwoWire(1);
-
-// GyverOLED<SSD1306_128x64, OLED_NO_BUFFER> oled(0x3C, &Wire2);
-// GyverOLED<SSD1306_128x64, OLED_NO_BUFFER> oledMini(0x3C, &Wire);
-// GyverOLED<SSH1106_128x64> oledMini;
 Encoder Enc(NOM_PIN_ENC_TOLEFT, NOM_PIN_ENC_TORIGHT, -1, TYPE2); // объявим энкодер класс
-
-// Переменные таймера
-volatile uint64_t currentTimerPeriodUs = MIN_SPEED_US; // Текущий период таймера
-
-#define COEF_TEMP 0.1 // коэффициент для фильтра 0.1 - 0.001, чем выше - тем резче
 
 //------------------------------------------------------------
 // глобальные переменные
@@ -247,12 +166,12 @@ EEManager Memory(FlashMemory); // передаём нашу переменную
 
 DIn BtnEnc{false, DEFAULT_TIME_BOUNCE_BTN_MS}; // класс. Кнопка энкодера
 
-DIn ReqDS(false, 1000, 0); // опрашивание DS
-
 DIn TorchOn(false, DEFAULT_TIME_BOUNCE_BTN_MS); // класс. Сигнал включения дуги
 
-AIn AInVelocity, AInVelo;
 AIn AInArcVoltage; // Аналоговый вход. Напряжение дуги
+AIN AInSetVoltage; // Аналоговый вход. Задатчик напряжения дуги
+
+float ArcVoltage;  // Напряжение дуги
 
 FastAccelStepperEngine engine = FastAccelStepperEngine();
 FastAccelStepper *stepper = NULL;
@@ -262,23 +181,10 @@ Generator Blink500x500ms;
 Generator BlinkTurn;
 BlinkRepeatly BuzzerWarning;
 
-uint16_t i, x;
-TimeScan TimeScanCPU;
-
 bool BtnMenuOk;        // кнопка меню Ok для Task дисплей
 bool BtnMenuUp;        // кнопка меню Вверх для Task дисплей
 bool BtnMenuDown;      // кнопка меню Вниз для Task дисплей
 bool FirstScan = true; // признак первого скана
-
-bool BeepTurn; // выдача звука при поворотах
-
-float kkk;
-
-String ArrScrMini[2], ArrScrMiniNew[2];
-
-BlinkRepeatly BlinkRepeatTwice;
-BlinkRepeatly BlinkBlueSaveToFlash; // моргание синего диода при сохранении во флэш
-BlinkStrob BlinkStrobTurn;          // класс. Моргания поворотников и стробоскопа при загрузке контроллера
 
 void SaveValueToFlash(bool DefaultValue, bool FirstScan); // Функция сохранения/выгрузки значения из eeprom
 void DOut();                                              // функция обработки дискретных выходов
@@ -288,13 +194,7 @@ void Display();
 void DataToSend(); // Функция для формирования отправляемых данных
 void TestLive();   // Функция для показания что жив CPU на дисплее
 void ReservMemoryForScrDisplay();
-void StrForOledMini(String *ResultStr, const String AddStr, uint16_t Value, uint16_t Length); // Функция для обрезки строк для OldeMini
-// void IRAM_ATTR CountPulse();
-float MapFloat(float x, float xmin, float xmax, float ymin, float ymax);
 
-TON TmrCicle;
-TON TmrBeepTurn;
-TON TmrTurn;              // Таймер Звука для поворота
 TON TmrPiercing;          // Таймер задержки пробивки металла
 TaskHandle_t TaskDisplay; // Задача 1
 TaskHandle_t Task2;       // Задача 2
@@ -304,39 +204,200 @@ void Task2code(void *pvParameters);
 void TaskESPNowCicle(void *pvParameters);
 void SaveParam(uint16_t NumScr, uint16_t NumStr); // Функция сохранения координат
 void DefaultValueInit();                          // Функция для инициализации значений по умолчанию
-//------------------------------------------------------------
 
-//============================================================
-// Вызов функции только один раз в момент загрузки
-//============================================================
+// ------------------------------------------------------------------ СОСТОЯНИЕ
+static portMUX_TYPE s_mux = portMUX_INITIALIZER_UNLOCKED;
+static volatile uint32_t s_N = 10;    // импульсов на событие
+static volatile uint64_t s_total = 0; // накопленные импульсы (только полные блоки)
+static volatile int64_t s_lastUs = 0; // метка последнего события
+static volatile uint32_t s_events = 0;
+static volatile bool s_rebase = true; // сбросить опорную точку
+
+static uint64_t g_baseP = 0;
+static int64_t g_baseT = 0;
+static bool g_haveBase = false;
+static float g_freqHz = 0.0f;
+
+uint16_t x, i;
+
+const unsigned long PIERCE_DELAY_MS = 600;
+
+// ------------------------------------------------------------------ ISR
+// Вызывается раз в N импульсов -> нагрузка минимальна даже на сотнях кГц.
+static void IRAM_ATTR pcnt_hlim_isr(void *)
+{
+  int64_t now = esp_timer_get_time();
+  s_total += s_N;
+  s_lastUs = now;
+  s_events++;
+}
+
+// ------------------------------------------------------------------ PCNT
+static void pcnt_apply_N(uint32_t n)
+{
+  if (n < N_MIN)
+    n = N_MIN;
+  if (n > N_MAX)
+    n = N_MAX;
+
+  pcnt_counter_pause(PCNT_UNIT_ENG);
+  pcnt_set_event_value(PCNT_UNIT_ENG, PCNT_EVT_H_LIM, (int16_t)n);
+  pcnt_counter_clear(PCNT_UNIT_ENG);
+
+  portENTER_CRITICAL(&s_mux);
+  s_N = n;
+  s_rebase = true; // частичный счёт потерян -> опорную точку берём заново
+  portEXIT_CRITICAL(&s_mux);
+
+  pcnt_counter_resume(PCNT_UNIT_ENG);
+}
+
+static void pcnt_init()
+{
+  pcnt_config_t cfg = {};
+  cfg.pulse_gpio_num = PIN_PULSE;
+  cfg.ctrl_gpio_num = PCNT_PIN_NOT_USED;
+  cfg.lctrl_mode = PCNT_MODE_KEEP;
+  cfg.hctrl_mode = PCNT_MODE_KEEP;
+  cfg.pos_mode = PCNT_COUNT_INC;
+  cfg.neg_mode = EDGE_NEG_MODE;
+  cfg.counter_h_lim = (int16_t)s_N;
+  cfg.counter_l_lim = 0;
+  cfg.unit = PCNT_UNIT_ENG;
+  cfg.channel = PCNT_CHANNEL_0;
+  ESP_ERROR_CHECK(pcnt_unit_config(&cfg));
+
+  // подтяжку ставим ПОСЛЕ unit_config — он сам переписывает настройки пада
+  gpio_set_pull_mode((gpio_num_t)PIN_PULSE, PULL_MODE);
+
+#if FILTER_TICKS > 0
+  ESP_ERROR_CHECK(pcnt_set_filter_value(PCNT_UNIT_ENG, FILTER_TICKS));
+  pcnt_filter_enable(PCNT_UNIT_ENG);
+#else
+  pcnt_filter_disable(PCNT_UNIT_ENG);
+#endif
+
+  pcnt_counter_pause(PCNT_UNIT_ENG);
+  pcnt_counter_clear(PCNT_UNIT_ENG);
+  ESP_ERROR_CHECK(pcnt_event_enable(PCNT_UNIT_ENG, PCNT_EVT_H_LIM));
+
+  esp_err_t e = pcnt_isr_service_install(0);
+  if (e != ESP_OK && e != ESP_ERR_INVALID_STATE)
+    ESP_ERROR_CHECK(e);
+  ESP_ERROR_CHECK(pcnt_isr_handler_add(PCNT_UNIT_ENG, pcnt_hlim_isr, NULL));
+  ESP_ERROR_CHECK(pcnt_intr_enable(PCNT_UNIT_ENG));
+
+  pcnt_counter_resume(PCNT_UNIT_ENG);
+}
+
+//------------------------------------------------------------
+// Настройка шаговика
+//------------------------------------------------------------
+void setup_stepper()
+{
+  // Инициализация аппаратного движка ШИМ/RMT для шаговика
+  engine.init();
+  stepper = engine.stepperConnectToPin(THC_Z_STEP_PIN);
+
+  if (stepper)
+  {
+    stepper->setDirectionPin(THC_Z_DIR_PIN);
+    // Аппаратный разгон NEMA 23 (шагов/сек^2) — чтобы не было клина при резкой смене направления
+    stepper->setAcceleration(8000);
+  }
+
+}
+// ------------------------------------------------------------------ ИЗМЕРЕНИЕ
+// Возвращает true, если частота обновилась.
+static bool freq_update()
+{
+  uint64_t p;
+  int64_t t;
+  uint32_t ev;
+  bool reb;
+
+  portENTER_CRITICAL(&s_mux);
+  p = s_total;
+  t = s_lastUs;
+  ev = s_events;
+  reb = s_rebase;
+  s_rebase = false;
+  portEXIT_CRITICAL(&s_mux);
+
+  if (reb || !g_haveBase)
+  { // новая опорная точка
+    if (ev == 0)
+      return false;
+    g_baseP = p;
+    g_baseT = t;
+    g_haveBase = true;
+    return false;
+  }
+
+  int64_t now = esp_timer_get_time();
+
+  // нет импульсов — обнуляем и расширяем чувствительность
+  if (now - t > TIMEOUT_US)
+  {
+    g_freqHz = 0.0f;
+    if (s_N > N_MIN)
+      pcnt_apply_N(N_MIN);
+    g_baseP = p;
+    g_baseT = t;
+    return false;
+  }
+
+  uint64_t dP = p - g_baseP;
+  int64_t dT = t - g_baseT;
+
+  if (dP == 0 || dT <= 0)
+    return false; // новых событий ещё нет
+  if (dT < (TARGET_WINDOW_US / 2))
+    return false; // копим до половины окна
+
+  float f = (float)((double)dP * 1000000.0 / (double)dT);
+
+  if (EMA_ALPHA > 0.0f && g_freqHz > 0.0f)
+    g_freqHz += EMA_ALPHA * (f - g_freqHz);
+  else
+    g_freqHz = f;
+
+  g_baseP = p;
+  g_baseT = t; // следующее окно стык в стык
+
+  // подгоняем N так, чтобы событие приходило примерно раз в TARGET_WINDOW_US
+  uint32_t want = (uint32_t)(f * (TARGET_WINDOW_US / 1000000.0f));
+  if (want < N_MIN)
+    want = N_MIN;
+  if (want > N_MAX)
+    want = N_MAX;
+  uint32_t cur = s_N;
+  if (want > cur * 2 || want < cur / 2)
+    pcnt_apply_N(want);
+
+  return true;
+}
+
+// ------------------------------------------------------------------ MAIN
 void setup()
 {
   setlocale(LC_ALL, "en_US.UTF-8");
   Serial.begin(115200);
-  delay(2000);
-  Serial.println("========================================");
-  Serial.println("SYSTEM STARTING...");
-
+  delay(1500);
   // Причина сброса
   esp_reset_reason_t reason = esp_reset_reason();
   Serial.print("Reset reason: ");
   Serial.println(reason);
 
-  // // Дополнительная диагностика
-  // Serial.print("Heap size: ");
-  // Serial.println(ESP.getHeapSize());
-  // Serial.print("Free heap: ");
-  // Serial.println(ESP.getFreeHeap());
-  // Serial.println("========================================");
+  Serial.println("\n=== Reciprocal frequency meter (PCNT + esp_timer) ===");
+  pcnt_init();
+  Serial.printf("GPIO=%d  unit=%d  filter=%d tick  N0=%u\n",
+                PIN_PULSE, (int)PCNT_UNIT_ENG, FILTER_TICKS, s_N);
 
   // инициализируем номера pin на кнопках
   BtnEnc.ModePin(NOM_PIN_ENC_BTN); // Кнопка. Энкодера"
   Enc.setTickMode(AUTO);
   BuzzerWarning.Init(1000, 1000, 4);
-
-  AInArcVoltage.Init(PIN_ARC_VOLTAGE_ADC, 5000, 0, 8192, 1, 100); // AIn::Init(byte NoPin, uint16_t _KoeffFiltr, uint16_t MinADC, uint16_t MaxADC, uint16_t MinTech, uint16_t MaxTech)
-  AInArcVoltage.InitUnreliability(8190, 10);
-
 
   setCpuFrequencyMhz(240);
 
@@ -345,21 +406,6 @@ void setup()
   EEPROM.begin(512); // резервируем блок во флэш памяти
                      //  DefaultValueInit();            // Функция для инициализации значений по умолчанию
                      // SaveValueToFlash(false, true); // Функция сохранения/выгрузки значения из eeprom
-
-  BlinkStrobTurn.BlinkStart = Ref.BlinkStart; // переложим бит необходимости включения моргания стробоскопов и поворотников при загрузке
-  BlinkStrobTurn.TimeBuzzer = 1000;
-  BlinkStrobTurn.TimeStrob = Ref.TimeStrobOnStart;
-  // BlinkStrobTurn.TimeStrob = 1000;
-  BlinkStrobTurn.TimeTurn = Ref.TimeTurnOnStart;
-  // BlinkStrobTurn.TimeTurn = 1000;
-
-  Serial.print("=Размер занятой памяти в EEPROM: ");
-  // Serial.print(Memory.blockSize());
-  Serial.println(" Байт=");
-
-  //------------------------------------------------------------
-  // Инициализация Pin и другого
-  //------------------------------------------------------------
 
   TorchOn.ModePin(PIN_TORCH_ON_INPUT); // Кнопка. Энкодера"
   pinMode(NOM_PIN_BLUE_LED, OUTPUT);   // выход Синий светодиод
@@ -372,29 +418,13 @@ void setup()
   digitalWrite(PIN_ARC_OK_OUTPUT, LOW);
   digitalWrite(PIN_RELAY_SELECT, LOW);
   digitalWrite(THC_Z_STEP_PIN, LOW);
-
-  // //  Инициализируем шины
-  // Wire2.begin(NOM_PIN_OLED_SDA, NOM_PIN_OLED_SCL);          // SDA, SCL для первой шины
-  // Wire.begin(NOM_PIN_OLED_MINI_SDA, NOM_PIN_OLED_MINI_SCL); // SDA, SCL для второй шины
-
-  // oled.init();
-  // oled.clear();
-  // oled.setCursor(0, 0);
-  // oled.setScale(1);
-
-  // oledMini.init();
-  // oledMini.clear();
-  // oledMini.setScale(2);
-  // oledMini.setCursor(0, 0);
+  setup_stepper();
 
   Serial.print("Свободно памяти: ");
   Serial.println(ESP.getFreeHeap());
 
   Serial.print("Макс. непрерывный блок: ");
   Serial.println(ESP.getMaxAllocHeap());
-
-  BlinkRepeatTwice.Init(200, 300, 5);   // 200мс горит, 300мс не горит, и так 5 раз
-  BlinkBlueSaveToFlash.Init(50, 70, 5); // 100мс горит, 200мс не горит, и так 2 раза моргание синего диода при сохранении во флэш
 
   xTaskCreatePinnedToCore(
       TaskDisplayCicle, /* Функция для задачи */
@@ -424,61 +454,41 @@ void setup()
       0);              /* Номер ядра, на котором она должна выполняться */
 }
 
-//============================================================
-// Функция настройки таймера прерывания для подсчета об/мин двигателя и карданного вала
-//============================================================
-void setup_timer_hardware()
+void loop()
 {
-  // Инициализация аппаратного движка ШИМ/RMT для шаговика
-  engine.init();
-  stepper = engine.stepperConnectToPin(THC_Z_STEP_PIN);
-
-  if (stepper)
+  if (Enc.isLeft())
   {
-    stepper->setDirectionPin(THC_Z_DIR_PIN);
-    // Аппаратный разгон NEMA 23 (шагов/сек^2) — чтобы не было клина при резкой смене направления
-    stepper->setAcceleration(8000);
+    BtnMenuDown = true;
   }
 
-  // // Настраиваем ШИМ-канал 0 на частоту 4166 Гц (эквивалент 120 мкс)
-  // // Разрядность 8 бит (значения 0-255)
-  // ledcSetup(0, 4166, 8);
+  // Serial.print("BtnMenuDown = ");
+  // Serial.println(BtnMenuDown);
 
-  // // Привязываем GPIO25 к ШИМ-каналу 0
-  // ledcAttachPin(THC_Z_STEP_PIN, 0);
+  if (Enc.isRight())
+  {
+    BtnMenuUp = true;
+  }
 
-  // // Включаем заполнение 50% (меандр), т.е. 128 из 255
-  // ledcWrite(0, 128);
+  freq_update();
 
-  // // === ИСПРАВЛЕННЫЙ СИНТАКСИС ДЛЯ СТАРОГО ЯДРА ESP32 (2.x.x) ===
-  // // Номер таймера 0, делитель 80 (80 МГц / 80 = 1 МГц, т.е. 1 тик = 1 мкс), считать вверх = true
-  // zTimer = timerBegin(3, 80, true);
+  static uint32_t t0 = 0;
+  if (millis() - t0 >= PRINT_MS)
+  {
+    t0 = millis();
+    float Volt = 0.0;
+    if (g_freqHz >= 15.0)
+    {
+      Volt = 79.4678 * g_freqHz / 1000.0f + 20.1050;
+    }
 
-  // // Привязываем функцию прерывания к таймеру, тип прерывания по фронту = true
-  // timerAttachInterrupt(zTimer, &onTimer, true);
+    AInArcVoltage._KoeffFiltr = 3000;
+    ArcVoltage = AInArcVoltage.Filtr1th(Volt);
 
-  // // Устанавливаем первоначальный интервал (в тиках/мкс) и включаем автоперезапуск = true
-  // timerAlarmWrite(zTimer, MIN_SPEED_US, true);
-
-  // // Активируем таймер (в старых версиях это обязательная отдельная функция)
-  // timerAlarmEnable(zTimer);
-
-  // timer_config_t config = {
-  //     .alarm_en = TIMER_ALARM_EN,
-  //     .counter_en = TIMER_PAUSE,
-  //     .counter_dir = TIMER_COUNT_UP,
-  //     .auto_reload = TIMER_AUTORELOAD_EN,
-  //     .divider = 80 // 1 тик = 1 мкс при 80 МГц
-  // };
-
-  // timer_init(TIMER_GROUP_0, TIMER_0, &config);
-  // // Устанавливаем порог срабатывания для таймера двигателя(например, через 5 секунд)
-  // timer_set_alarm_value(TIMER_GROUP_0, TIMER_0, TIME_RPM_RESET);
-  // timer_enable_intr(TIMER_GROUP_0, TIMER_0);
-  // timer_isr_callback_add(TIMER_GROUP_0, TIMER_0, timer_isr_engine, NULL, 0);
-  // timer_start(TIMER_GROUP_0, TIMER_0);
+    Serial.printf("F = %10.3f Hz | Напряжение = %9.2f | N = %-6u | events = %u\n",
+                  g_freqHz, ArcVoltage, s_N, s_events);
+  }
+  vTaskDelay(pdMS_TO_TICKS(1));
 }
-//============================================================
 
 //------------------------------------------------------------
 // Функция циклически вызываемая по приоритету
@@ -487,13 +497,6 @@ void TaskDisplayCicle(void *pvParameters)
 {
   for (;;)
   {
-
-    //  Переложим на другие экраны
-    Screens[0][0].Param = Screens[1][0].Param = Ref.TOil;    // Температура масла
-    Screens[1][0].QualityParam = Screens[0][0].QualityParam; // Качество. Температура масла
-    Screens[0][1].Param = Screens[2][0].Param = Ref.TWater;  // Температура воды
-    Screens[2][0].QualityParam = Screens[0][1].QualityParam; // Качество. Температура воды
-
     ArrScr.RefreshData(BtnMenuOk, BtnMenuDown, BtnMenuUp);
     if (BtnMenuOk)
     {
@@ -566,93 +569,15 @@ void Display()
 }
 //------------------------------------------------------------
 
-//------------------------------------------------------------
-// Функция loop
-//------------------------------------------------------------
-void loop()
-{
-  if (Enc.isLeft())
-  {
-    BtnMenuDown = true;
-  }
-
-  // Serial.print("BtnMenuDown = ");
-  // Serial.println(BtnMenuDown);
-
-  if (Enc.isRight())
-  {
-    BtnMenuUp = true;
-  }
-  // Serial.print("BtnMenuUp = ");
-  // Serial.println(BtnMenuUp);
-  //------------------------------------------------------------
-  // вызов функции сохранения параметров
-  //------------------------------------------------------------
-  // SaveParam(5, 1); // вызов функции сохранения параметров
-  //------------------------------------------------------------
-  vTaskDelay(pdMS_TO_TICKS(1));
-}
-//------------------------------------------------------------
-
-/*************************************************************************************/
-// callback function that will be executed when data is received
-void OnDataRecv(const uint8_t *MACAddr, const uint8_t *incomingData, int len)
-{
-  if (!MACAddr || !incomingData || len <= 0)
-    return;
-  char MACAddrStr[18]; // объявим строковую переменную MAC адреса для сообщений
-  snprintf(MACAddrStr, sizeof(MACAddrStr), "%02x:%02x:%02x:%02x:%02x:%02x",
-           MACAddr[0], MACAddr[1], MACAddr[2], MACAddr[3], MACAddr[4], MACAddr[5]);
-  // Serial.print("Пришли данные с mac адреса ");
-  // Serial.println(MACAddrStr); // печатаем MAC адрес
-
-  uint16_t i, j;
-  // Проверяем с какого mac адреса пришло сообщение
-  for (int i = 0; i < MAX_COUNT_RECEIVE; i++)
-  {
-    if (memcmp(MACAddr, MACAddress[i], 6) == 0)
-    {
-      // Serial.print("Данный MAC адрес есть в системе под номером: ");
-      // Serial.println(i);
-
-      switch (i)
-      {
-      case 0:
-        if (len < (int)sizeof(GetData_1))
-          return;
-        memcpy(&GetData_1, incomingData, sizeof(GetData_1));
-        // Serial.print("GetData_1.ValueForwardBackward = ");
-        // Serial.println(GetData_1.ValueForwardBackward);
-
-        break;
-      case 1:
-        if (len < (int)sizeof(GetData_2))
-          return;
-        memcpy(&GetData_2, incomingData, sizeof(GetData_2));
-        break;
-      case 2:
-        if (len < (int)sizeof(GetData_2))
-          return;
-        memcpy(&GetData_2, incomingData, sizeof(GetData_2));
-        break;
-      }
-      return;
-    }
-  }
-  Serial.println("Но такого mac адреса в системе нет");
-}
-/*************************************************************************************/
-
 //============================================================
 // Вызов функции циклически
 //============================================================
 void Task2code(void *pvParameters)
 {
-  setup_timer_hardware(); // инициализация таймеров прерывания
-
   for (;;)
   {
-    TestLive();
+    ;
+    // // TestLive();
 
     bool torchOnSignal = TorchOn.ReadDIn(); // Считываем сигнал включения дуги
     torchOnSignal = true;
@@ -688,85 +613,41 @@ void Task2code(void *pvParameters)
     case ACTIVE_CUTTING:
       if (!torchOnSignal) // Если сигнал включения дуги пропал, то возвращаемся в состояние ожидания
       {
-        stepDirection = 0;
         digitalWrite(PIN_ARC_OK_OUTPUT, LOW);
         digitalWrite(PIN_RELAY_SELECT, LOW); // Отдаем Z обратно FluidNC для холостых переездов
         currentState = IDLE;
         break;
       }
 
-      // int voltageError = currentArcVoltage - TARGET_VOLTAGE_ADC;
-
-      // if (abs(voltageError) <= VOLTAGE_DEADZONE)
-      // {
-      //   stepDirection = 0; // Напряжение в допуске, удерживаем высоту
-      // }
-      // else
-      // {
-      //   // Задаем направление (Высокое напряжение = длинная дуга = едем ВНИЗ)
-      //   if (voltageError > 0)
-      //   {
-      //     stepDirection = -1;
-      //   }
-      //   else
-      //   {
-      //     stepDirection = 1;
-      //   }
-
-      //   // P-регулятор скорости: расчет периода таймера в зависимости от величины отклонения
-      //   long calculatedPeriod = MIN_SPEED_US - (abs(voltageError) * Kp);
-
-      // if (calculatedPeriod < (long)MAX_SPEED_US)
-      // {
-      //   currentTimerPeriodUs = MAX_SPEED_US;
-      // }
-      // else if (calculatedPeriod > (long)MIN_SPEED_US)
-      // {
-      //   currentTimerPeriodUs = MIN_SPEED_US;
-      // }
-      // else
-      // {
-      //   currentTimerPeriodUs = (uint32_t)calculatedPeriod;
-      // }
-      // stepDirection = -1; // просто заставим крутиться в одну сторону
-
-      // currentTimerPeriodUs = currentTimerPeriodUs + 1;
-      // // Обновляем интервал шагов Z на лету
-      // ledcSetup(0, currentTimerPeriodUs, 8);
-      // timerAlarmWrite(zTimer, currentTimerPeriodUs, true);
-      //  Serial.print("currentTimerPeriodUs = ");
-      //  Serial.println(currentTimerPeriodUs);
-
       break;
     }
 
     // Получаем отфильтрованное значение напряжения дуги
-    int currentArcVoltage = AInArcVoltage.Value();
+    int currentArcVoltage = ArcVoltage;
 
-    currentArcVoltage = 1000;
+    // currentArcVoltage = 1000;
 
-    if (FregTest > 2500)
-    {
-      TempBool = true;
-    }
-    if (FregTest < 1500)
-    {
-      TempBool = false;
-    }
+    // if (FregTest > 2500)
+    // {
+    //   TempBool = true;
+    // }
+    // if (FregTest < 1500)
+    // {
+    //   TempBool = false;
+    // }
 
-    if (!TempBool)
-      FregTest++;
-    else
-      FregTest--;
+    // if (!TempBool)
+    //   FregTest++;
+    // else
+    //   FregTest--;
 
-      Serial.print("FregTest = ");
-      Serial.println(FregTest);
+    // Serial.print("FregTest = ");
+    // Serial.println(FregTest);
 
-  
     // Считаем отклонение от центральной точки
     int deviation = currentArcVoltage - CENTER_VAL;
 
-    deviation = FregTest-CENTER_VAL;
+    //deviation = FregTest - CENTER_VAL;
 
     // Проверяем, вышли ли мы за пределы допуска (TOLERANCE)
     if (abs(deviation) > TOLERANCE)
@@ -776,23 +657,26 @@ void Task2code(void *pvParameters)
       long targetSpeed = map(abs(deviation), TOLERANCE, 2048, 200, MAX_SPEED);
       targetSpeed = constrain(targetSpeed, 0, MAX_SPEED);
 
-      stepper->setSpeedInHz(targetSpeed); // Меняем частоту на лету (аппаратно)
+      Serial.print("targetSpeed = ");
+      Serial.println(targetSpeed);
 
-      if (deviation > 0)
-      {
-        // Сигнал ушел вверх — крутим вперед бесконечным аппаратным ШИМ с разгоном
-        stepper->runForward();
+     stepper->setSpeedInHz(targetSpeed); // Меняем частоту на лету (аппаратно)
+
+        if (deviation > 0)
+        {
+          // Сигнал ушел вверх — крутим вперед бесконечным аппаратным ШИМ с разгоном
+          stepper->runForward();
+        }
+        else
+        {
+          // Сигнал ушел вниз — крутим назад
+          stepper->runBackward();
+        }
       }
       else
       {
-        // Сигнал ушел вниз — крутим назад
-        stepper->runBackward();
-      }
-    }
-    else
-    {
-      // Сигнал внутри допуска — даем команду аппаратного плавного торможения
-      stepper->stopMove();
+        // Сигнал внутри допуска — даем команду аппаратного плавного торможения
+        stepper->stopMove();
     }
 
     BtnEnc.ReadDIn();
@@ -817,8 +701,7 @@ void Task2code(void *pvParameters)
     //------------------------------------------------------------
     // вызов функции повтора моргания
     //------------------------------------------------------------
-    BlinkRepeatTwice.Cycle();
-    BlinkBlueSaveToFlash.Cycle();
+
     //------------------------------------------------------------
 
     //------------------------------------------------------------
@@ -845,17 +728,6 @@ void DOut()
 {
   // Выход синего диода
   digitalWrite(NOM_PIN_BLUE_LED, Blink100x300ms.Q /*BtnJoystick[1].Q*/);
-
-  // Выход активного Буззера
-  digitalWrite(NOM_PIN_BUZZER, (BeepTurn and !BlinkStrobTurn.BlinkStart) or BlinkStrobTurn.BuzzerOn);
-}
-
-//------------------------------------------------------------
-// Функция обработки сообщений, все сообщения пишем тут они в конце каждого цикла будут отрабатывать
-//------------------------------------------------------------
-void Msg()
-{
-  ;
 }
 
 //------------------------------------------------------------
@@ -967,14 +839,6 @@ void SaveValueToFlash(bool DefaultValue, bool FirstScan)
 }
 
 //------------------------------------------------------------
-// Функция для формирования отправляемых данных
-//------------------------------------------------------------
-void DataToSend()
-{
-  ;
-}
-
-//------------------------------------------------------------
 // Функция сохранения параметров
 //------------------------------------------------------------
 void SaveParam(uint16_t NumScr, uint16_t NumStr)
@@ -987,28 +851,12 @@ void SaveParam(uint16_t NumScr, uint16_t NumStr)
     ExitSaveCalibr = false; // сбросим что вышли из параметра
     SaveCalibr = false;     // сбросим переменную сохранения
     Serial.println("=Функция сохранения параметров=");
-    SaveValueToFlash(false, false);    // вызов функции Записи значений
-    BlinkBlueSaveToFlash.Start = true; // запустим моргалку синего диода
+    SaveValueToFlash(false, false); // вызов функции Записи значений
+    // BlinkBlueSaveToFlash.Start = true; // запустим моргалку синего диода
   }
   else if (ExitSaveCalibr) // при выходе из параметра без сохранения
   {
     ExitSaveCalibr = false; // сбросим что вышли из параметра
-  }
-}
-//------------------------------------------------------------
-
-//------------------------------------------------------------
-// Функция Map для типа float
-//------------------------------------------------------------
-float MapFloat(float x, float xmin, float xmax, float ymin, float ymax)
-{
-  if (xmax != xmin)
-  {
-    return (ymax - ymin) * ((x - xmin) / (xmax - xmin)) + ymin;
-  }
-  else
-  {
-    return 0.0;
   }
 }
 //------------------------------------------------------------
@@ -1044,42 +892,7 @@ void ReservMemoryForScrDisplay()
       yield();                           // Обязательно! Даем системе "подышать"
     }
   }
-
-  // Если вы активно используете StructCurrentScr для отрисовки,
-  // под него тоже стоит зарезервировать память
-  for (int i = 0; i < MAX_STR_DISPLAY; i++)
-  {
-    for (int k = 0; k < 5; k++)
-    {
-      ArrScr.CurrentScreen.Str[i][k].reserve(100);
-    }
-  }
-  for (i = 0; i <= 1; i++)
-  {
-    ArrScrMini[i].reserve(50);
-    ArrScrMiniNew[i].reserve(50);
-  }
 }
-//------------------------------------------------------------
-
-//------------------------------------------------------------
-// Функция для обрезки строк для OldeMini
-//------------------------------------------------------------
-void StrForOledMini(String *ResultStr, const String AddStr, uint16_t Value, uint16_t Length)
-{
-  String Str = String((int16_t(Value)));
-
-  // Если строка уже длиннее Length, обрезаем или просто добавляем AddStr
-  if (Str.length() < Length)
-  {
-    while (Str.length() < Length)
-    {
-      Str = " " + Str;
-    }
-  }
-  *ResultStr = Str + AddStr;
-}
-//------------------------------------------------------------
 
 //------------------------------------------------------------
 // Функция для инициализации значений по умолчанию
