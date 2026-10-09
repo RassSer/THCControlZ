@@ -7,195 +7,195 @@ StructStr Screens[MAX_QTY_SCR][MAX_STR] = // структура экрана
     {
         // Экран 0 - Главный
         {
-            /*0*/ {" ", "Т масла наружного воздуха", "", " °C", "", true, true, true, true, 10.0, 7, 1, 0, 150.0, -50.0, 0.1, false, false, false, 0}, // Температура масла
-            /*1*/ {" ", "Т воды", "", " °C", "", true, true, true, true, 10.0, 7, 2, 0, 150.0, -50.0, 0.1, false, false, false, 0},                    // Температура воды
-            /*2*/ {" ", "Т наружного воздуха", "", " °C", "", true, true, true, false, 10.0, 7, 0, 0, 150.0, -50.0, 0.1, false, false, false, 0},      // Темп. нар. воздуха
-            /*3*/ {" ", "Обороты двигателя", "", " об/мин", "", true, true, true, true, 10.0, 7, 3, 0, 5000.0, 0.0, 1.0, false, false, false, 0},      // Обороты двигателя
-            /*4*/ {" ", "Скорость", "", " км/ч", "", true, true, true, true, 10.0, 7, 4, 0, 150.0, -50.0, 1.0, false, false, false, 0},                // Скорость
-            /*5*/ {" ", "Поворотники", "", "", "", false, false, false, true, 10.0, 7, 6, 0, 0.0, 0.0, 0.0, false, false, false, 0},                   // Поворотники
-            /*6*/ {" ", "Настройки", "", "", "", false, false, false, true, 10.0, 7, 5, 0, 0.0, 0.0, 0.0, false, false, false, 0},                     // Настройки
-            /*7*/ {" ", "", "", "", "", false, false, false, false, 10.0, 7, 0, 0, 100.0, 0.0, 0.1, false, false, false, 0},                           //
-            /*8*/ {" ", "", "", "", "", false, false, false, false, 10.0, 7, 0, 0, 100.0, 0.0, 0.0, false, false, false, 0},                           //
-            /*9*/ {" ", "", "", "", "", false, false, false, false, 10.0, 7, 0, 0, 100.0, 0.0, 0.0, false, false, false, 0},                           //
-            /*10*/ {" ", "", "", "", "", false, false, false, false, 10.0, 7, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            //
-            /*11*/ {" ", "", "", "", "", false, false, false, false, 10.0, 7, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            //
-            /*12*/ {" ", "", "", "", "", false, false, false, false, 10.0, 7, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            //
-            /*13*/ {" ", "", "", "", "", false, false, false, false, 10.0, 7, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            //
-            /*14*/ {" ", "", "", "", "", false, false, false, false, 10.0, 7, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            //
-            /*15*/ {" ", "", "", "", "", false, false, false, false, 10.0, 7, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            //
-            /*16*/ {" ", "", "", "", "", false, false, false, false, 10.0, 7, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            //
-            /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 7, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            //
-            /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 7, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            //
-            /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 7, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}                             //
-                                                                                                                                                       //
+            /*0*/ {" ", "Зад. Напр.", "", " В", "", true, true, true, false, 100.0, 8, 0, 0, 400.0, 50.0, 1.0, false, false, false, 0},         // Задание напряжения, В
+            /*1*/ {" ", "Текущее Напр.", "", " В", "", true, true, true, true, 100.0, 8, 1, 0, 0.0, 0.0, 0.0, false, false, false, 0},          // Текущее напряжение, В
+            /*2*/ {" ", "Гистерезис +-", "", " В", " ", true, false, true, false, 3.0, 8, 0, 0, 10.0, 1.0, 0.5, false, false, false, 0},        // Дельта напряжения, В
+            /*3*/ {" ", "Чувствительность", "", " %", " ", true, false, true, false, 100.0, 8, 0, 0, 100.0, 50.0, 5.0, false, false, false, 0}, // Чувствительность, 50-100%
+            /*4*/ {" ", "Скорость", "", " %", "", true, true, true, true, 100.0, 8, 2, 0, 100.0, 50.0, 5.0, false, false, false, 0},            // Скорость, 50-100%
+            /*5*/ {" ", "Временные задержки", "", "", " ", true, false, false, false, 10.0, 8, 3, 0, 0.0, 0.0, 0.0, false, false, false, 0},    //
+            /*6*/ {" ", "Программа", "", "", " ", true, false, false, false, 10.0, 8, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},             //
+            /*7*/ {" ", "Сохранить", "", "", " ", true, false, false, false, 10.0, 8, 0, 0, 0.0, 0.0, 0.0, true, true, false, 0},               //
+            /*8*/ {" ", "", "", "", "", false, false, false, false, 10.0, 8, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                      //
+            /*9*/ {" ", "", "", "", "", false, false, false, false, 10.0, 8, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                      //
+            /*10*/ {" ", "", "", "", "", false, false, false, false, 10.0, 8, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                     //
+            /*11*/ {" ", "", "", "", "", false, false, false, false, 10.0, 8, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                     //
+            /*12*/ {" ", "", "", "", "", false, false, false, false, 10.0, 8, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                     //
+            /*13*/ {" ", "", "", "", "", false, false, false, false, 10.0, 8, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                     //
+            /*14*/ {" ", "", "", "", "", false, false, false, false, 10.0, 8, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                     //
+            /*15*/ {" ", "", "", "", "", false, false, false, false, 10.0, 8, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                     //
+            /*16*/ {" ", "", "", "", "", false, false, false, false, 10.0, 8, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                     //
+            /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 8, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                     //
+            /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 8, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                     //
+            /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 8, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}                      //
+            //
         },
-        // Экран 1 - Т масла
+        // Экран 1 - Зад. Напр.
         {
-            /*0*/ {" ", "Т масла", "", " °C", "", true, true, true, true, 10.0, 5, 0, 0, 150.0, -50.0, 0.1, false, false, false, 0},              // Т масла
-            /*1*/ {" ", "T Включения", "", " °C", " ", true, false, true, false, 82.0, 5, 0, 0, 150.0, -50.0, 1.0, false, false, false, 0},       // Т масла. T Включения
-            /*2*/ {" ", "T Отключения", "", " °C", " ", true, false, true, false, 80.0, 5, 0, 0, 150.0, -50.0, 1.0, false, false, false, 0},      // Т масла. T Отключения
-            /*3*/ {" ", "Мин. Скорость", "", " %", " ", true, false, true, false, 50.0, 5, 0, 0, 100.0, 30.0, 1.0, false, false, false, 0},       // Т масла. Мин. скорость
-            /*4*/ {" ", "Макс. Температура", "", " °C", " ", true, false, true, false, 100.0, 5, 0, 0, 100.0, 30.0, 1.0, false, false, false, 0}, // Т масла. Максимальная температура, при которой максимальная скорость вентилятора
-            /*5*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                        // Т масла.
-            /*6*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                        // Т масла.
-            /*7*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                        // Т масла.
-            /*8*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                        // Т масла.
-            /*9*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                        // Т масла.
-            /*10*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Т масла.
-            /*11*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Т масла.
-            /*12*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Т масла.
-            /*13*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Т масла.
-            /*14*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Т масла.
-            /*15*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Т масла.
-            /*16*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Т масла.
-            /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Т масла.
-            /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Т масла.
-            /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Т масла.
-                                                                                                                                                  //
+            /*0*/ {" ", "Зад. Напр.", "", " В", "", true, true, true, true, 0.0, 4, 0, 0, 150.0, -50.0, 1.0, false, false, false, 0},             // Заданное напряжение, В
+            /*1*/ {" ", "Макс. Напр.", "", " В", " ", true, false, true, false, 200.0, 4, 0, 0, 300.0, 150.0, 5.0, false, false, false, 0},       // Заданное напряжение, В. Технический максимум напряжения, при макс значении на потенциометре, В
+            /*2*/ {" ", "Мин. Напр.", "", " В", " ", true, false, true, false, 100.0, 4, 0, 0, 140.0, 50.0, 5.0, false, false, false, 0},         // Заданное напряжение, В. Технический минимум напряжения, при мин значении на потенциометре, В
+            /*3*/ {" ", "Мин. Напр. Контроля Z", "", "", "", false, false, false, false, 30.0, 4, 0, 0, 50.0, 40.0, 1.0, false, false, false, 0}, // Заданное напряжение, В. Минимальное напряжение выше которого идет контроль оси Z
+            /*4*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                        // Заданное напряжение, В.
+            /*5*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                        // Заданное напряжение, В.
+            /*6*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                        // Заданное напряжение, В.
+            /*7*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                        // Заданное напряжение, В.
+            /*8*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                        // Заданное напряжение, В.
+            /*9*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                        // Заданное напряжение, В.
+            /*10*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Заданное напряжение, В.
+            /*11*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Заданное напряжение, В.
+            /*12*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Заданное напряжение, В.
+            /*13*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Заданное напряжение, В.
+            /*14*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Заданное напряжение, В.
+            /*15*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Заданное напряжение, В.
+            /*16*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Заданное напряжение, В.
+            /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Заданное напряжение, В.
+            /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Заданное напряжение, В.
+            /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Заданное напряжение, В.
+            //
         },
-        // Экран 2 - Т воды
+        // Экран 2 - Скорость
         {
-            /*0*/ {" ", "Т воды", "", " °C", "", true, true, true, true, 10.0, 5, 0, 1, 150.0, -50.0, 0.1, false, false, false, 0},                    // Т воды
-            /*1*/ {" ", "T Включения 1ого вент", "", " °C", " ", true, false, true, false, 82.0, 5, 1, 0, 150.0, -50.0, 1.0, false, false, false, 0},  // Т воды. T Включения 1ого вент
-            /*2*/ {" ", "T Отключения 1ого вент", "", " °C", " ", true, false, true, false, 80.0, 5, 1, 0, 150.0, -50.0, 1.0, false, false, false, 0}, // Т воды. T Отключения 1ого вент
-            /*3*/ {" ", "Мин. Скорость 1ого вент", "", " %", " ", true, false, true, false, 50.0, 5, 1, 0, 100.0, 30.0, 1.0, false, false, false, 0},  // Т воды. Мин. Скорость 1ого вент
-            /*4*/ {" ", "Макс. Температура", "", " %", " ", true, false, true, false, 100.0, 5, 1, 0, 150.0, 30.0, 1.0, false, false, false, 0},       // Т воды. Максимальная температура, при которой максимальная скорость вентилятора
-            /*5*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                             // Т воды.
-            /*6*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                             // Т воды.
-            /*7*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                             // Т воды.
-            /*8*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                             // Т воды.
-            /*9*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                             // Т воды.
-            /*10*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Т воды.
-            /*11*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Т воды.
-            /*12*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Т воды.
-            /*13*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Т воды.
-            /*14*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Т воды.
-            /*15*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Т воды.
-            /*16*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Т воды.
-            /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Т воды.
-            /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Т воды.
-            /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Т воды.
-                                                                                                                                                       //
+            /*0*/ {" ", "Скорость", "", " %", "", true, true, true, true, 100.0, 5, 0, 4, 100.0, 50.0, 5.0, false, false, false, 0},                   // Скорость, 50-100%
+            /*1*/ {" ", "Угол шага", "", " °", " ", true, false, true, false, 1.8, 5, 1, 0, 1.8, 0.9, 0.9, false, false, false, 0},                    // Скорость, 50-100%. Угол шага, °
+            /*2*/ {" ", "Ускорение", "", " об/мин/сек", " ", true, false, true, false, 80.0, 5, 1, 0, 150.0, -50.0, 1.0, false, false, false, 0},      // Скорость, 50-100%. Ускорение
+            /*3*/ {" ", "Макс. Скорость", "", " об/мин", " ", true, false, true, false, 1200.0, 5, 1, 0, 1800.0, 500.0, 10.0, false, false, false, 0}, // Скорость, 50-100%. Максимальная скорость, об/мин
+            /*4*/ {" ", "Мин. Скорость", "", " об/мин", " ", true, false, true, false, 100.0, 5, 1, 0, 500.0, 50.0, 10.0, false, false, false, 0},     // Скорость, 50-100%. Минимальная скорость, об/мин
+            /*5*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                             // Скорость, 50-100%.
+            /*6*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                             // Скорость, 50-100%.
+            /*7*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                             // Скорость, 50-100%.
+            /*8*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                             // Скорость, 50-100%.
+            /*9*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                             // Скорость, 50-100%.
+            /*10*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Скорость, 50-100%.
+            /*11*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Скорость, 50-100%.
+            /*12*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Скорость, 50-100%.
+            /*13*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Скорость, 50-100%.
+            /*14*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Скорость, 50-100%.
+            /*15*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Скорость, 50-100%.
+            /*16*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Скорость, 50-100%.
+            /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Скорость, 50-100%.
+            /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Скорость, 50-100%.
+            /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Скорость, 50-100%.
+            //
         },
-        // Экран 3 - Обороты двигателя
+        // Экран 3 - Временные задержки
         {
-            /*0*/ {" ", "Обороты двигателя", "", " об/мин", "", true, true, true, true, 0.0, 3, 0, 3, 5000.0, 0.0, 1.0, false, false, false, 0}, // Обороты двигателя, об/мин
-            /*1*/ {" ", "Отображать на мал. диспл", "", "", " ", true, false, true, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, true, false, false, 0}, // Обороты двигателя, об/мин. Отображать на маленьком дисплее
-            /*2*/ {" ", "Коэффициент домножения", "", "", " ", true, false, true, false, 1.0, 3, 0, 0, 60.0, 1.0, 1.0, false, false, false, 0},  // Обороты двигателя, об/мин. Коэффициент домножения
-            /*3*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Обороты двигателя, об/мин.
-            /*4*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Обороты двигателя, об/мин.
-            /*5*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Обороты двигателя, об/мин.
-            /*6*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Обороты двигателя, об/мин.
-            /*7*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Обороты двигателя, об/мин.
-            /*8*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Обороты двигателя, об/мин.
-            /*9*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Обороты двигателя, об/мин.
-            /*10*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                      // Обороты двигателя, об/мин.
-            /*11*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                      // Обороты двигателя, об/мин.
-            /*12*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                      // Обороты двигателя, об/мин.
-            /*13*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                      // Обороты двигателя, об/мин.
-            /*14*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                      // Обороты двигателя, об/мин.
-            /*15*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                      // Обороты двигателя, об/мин.
-            /*16*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                      // Обороты двигателя, об/мин.
-            /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                      // Обороты двигателя, об/мин.
-            /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                      // Обороты двигателя, об/мин.
-            /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                      // Обороты двигателя, об/мин.
-                                                                                                                                                 //
+            /*0*/ {" ", "Временные задержки", "", "", "", false, false, false, true, 100.0, 2, 5, 0, 400.0, 50.0, 1.0, false, false, false, 0},       // Временные задержки
+            /*1*/ {" ", "Время пробития", "", " мc", "", true, false, true, false, 100.0, 2, 1, 0, 2000.0, 0.0, 50.0, false, false, false, 0},        // Временные задержки. Время пробития, мс
+            /*2*/ {" ", "Пауза перед контролем Z", "", " мс", "", true, false, true, false, 3.0, 2, 0, 0, 1000.0, 0.0, 50.0, false, false, false, 0}, // Временные задержки. Время перед началом контроля Z, мс
+            /*3*/ {" ", "", "", "", "", false, false, false, false, 100.0, 2, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                           // Временные задержки.
+            /*4*/ {" ", "", "", "", "", false, false, false, false, 100.0, 2, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                           // Временные задержки.
+            /*5*/ {" ", "", "", "", "", false, false, false, false, 10.0, 2, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Временные задержки.
+            /*6*/ {" ", "", "", "", "", false, false, false, false, 10.0, 2, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Временные задержки.
+            /*7*/ {" ", "", "", "", "", false, false, false, false, 10.0, 2, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Временные задержки.
+            /*8*/ {" ", "", "", "", "", false, false, false, false, 10.0, 2, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Временные задержки.
+            /*9*/ {" ", "", "", "", "", false, false, false, false, 10.0, 2, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                            // Временные задержки.
+            /*10*/ {" ", "", "", "", "", false, false, false, false, 10.0, 2, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                           // Временные задержки.
+            /*11*/ {" ", "", "", "", "", false, false, false, false, 10.0, 2, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                           // Временные задержки.
+            /*12*/ {" ", "", "", "", "", false, false, false, false, 10.0, 2, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                           // Временные задержки.
+            /*13*/ {" ", "", "", "", "", false, false, false, false, 10.0, 2, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                           // Временные задержки.
+            /*14*/ {" ", "", "", "", "", false, false, false, false, 10.0, 2, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                           // Временные задержки.
+            /*15*/ {" ", "", "", "", "", false, false, false, false, 10.0, 2, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                           // Временные задержки.
+            /*16*/ {" ", "", "", "", "", false, false, false, false, 10.0, 2, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                           // Временные задержки.
+            /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 2, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                           // Временные задержки.
+            /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 2, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                           // Временные задержки.
+            /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 2, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                           // Временные задержки.
+            //
         },
-        // Экран 4 - Скорость
+        // Экран 4 -
         {
-            /*0*/ {" ", "Скорость", "", " км/ч", "", true, true, true, true, 0.0, 5, 0, 4, 150.0, -50.0, 1.0, false, false, false, 0},           // Скорость, км/час
-            /*1*/ {" ", "Отображать на мал. диспл", "", "", " ", true, false, true, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, true, false, false, 0}, // Скорость, км/час. Отображать на маленьком дисплее
-            /*2*/ {" ", "Диаметр колеса", "", " см", " ", true, false, true, false, 75.0, 5, 0, 0, 100.0, 70.0, 1.0, false, false, false, 0},    // Скорость, км/час. Диаметр колеса, см
-            /*3*/ {" ", "Редукция на мосте", "", "", " ", true, false, true, false, 3.0, 5, 0, 0, 6.0, 0.00, 0.1, false, false, false, 0},       // Скорость, км/час. Редукция на мосте
-            /*4*/ {" ", "Коэффициент домножения", "", "", " ", true, false, true, false, 1.0, 5, 0, 0, 60.0, 1.0, 1.0, false, false, false, 0},  // Скорость, км/час. Коэффициент домножения
-            /*5*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Скорость, км/час.
-            /*6*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Скорость, км/час.
-            /*7*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Скорость, км/час.
-            /*8*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Скорость, км/час.
-            /*9*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                       // Скорость, км/час.
-            /*10*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                      // Скорость, км/час.
-            /*11*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                      // Скорость, км/час.
-            /*12*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                      // Скорость, км/час.
-            /*13*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                      // Скорость, км/час.
-            /*14*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                      // Скорость, км/час.
-            /*15*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                      // Скорость, км/час.
-            /*16*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                      // Скорость, км/час.
-            /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                      // Скорость, км/час.
-            /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                      // Скорость, км/час.
-            /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 5, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                      // Скорость, км/час.
-                                                                                                                                                 //
+            /*0*/ {" ", "", "", "", "", false, false, false, false, 0.0, 3, 0, 4, 150.0, -50.0, 1.0, false, false, false, 0}, //
+            /*1*/ {" ", "", "", "", "", false, false, false, false, 400.0, 3, 0, 0, 400.0, 0.0, 1.0, false, false, false, 0}, //.
+            /*2*/ {" ", "", "", "", "", false, false, false, false, 0.0, 3, 0, 0, 400.0, 0.0, 1.0, false, false, false, 0},   //.
+            /*3*/ {" ", "", "", "", "", false, false, false, false, 0.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},     //.
+            /*4*/ {" ", "", "", "", "", false, false, false, false, 0.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},     //.
+            /*5*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},    //.
+            /*6*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},    //.
+            /*7*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},    //.
+            /*8*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},    //.
+            /*9*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},    //.
+            /*10*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},   //.
+            /*11*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},   //.
+            /*12*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},   //.
+            /*13*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},   //.
+            /*14*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},   //.
+            /*15*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},   //.
+            /*16*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},   //.
+            /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},   //.
+            /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},   //.
+            /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 3, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},   //.
+            //
         },
-        // Экран 5 - Настройки
+        // Экран 5 -
         {
-            /*0*/ {" ", "Настройки", "", "", "", false, false, false, true, 10.0, 6, 0, 6, 0.0, 0.0, 0.0, false, false, false, 0},                        // Настройки
-            /*1*/ {" ", "Сохранить в EEPROM", "", "", " ", true, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, true, false, false, 0},               // Настройки. Сохранить в EEPROM
-            /*2*/ {" ", "Моргание при старте", "", "", " ", true, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, true, false, false, 0},              //. Моргание стробосками и поворотниками при старте
-            /*3*/ {" ", "Время вкл.строб", "", " мс", " ", true, false, true, false, 1000.0, 6, 0, 0, 4000.0, 0.0, 100.0, false, false, false, 0},        //. Время включения стробоскопов, мсек
-            /*4*/ {" ", "Время вкл.поворотников", "", " мс", " ", true, false, true, false, 1000.0, 6, 0, 0, 4000.0, 0.0, 100.0, false, false, false, 0}, //. Время вкл.поворотников, мсек
-            /*5*/ {" ", "Заводские настройки", "", "", " ", true, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, true, false, false, 0},              //. Загрузить заводские настройки
-            /*6*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                                //.
-            /*7*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                                //.
-            /*8*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                                //.
-            /*9*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                                //.
-            /*10*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                               //.
-            /*11*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                               //.
-            /*12*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                               //.
-            /*13*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                               //.
-            /*14*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                               //.
-            /*15*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                               //.
-            /*16*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                               //.
-            /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                               //.
-            /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                               //.
-            /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                               //.
-                                                                                                                                                          //
+            /*0*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 6, 0.0, 0.0, 0.0, false, false, false, 0},        //
+            /*1*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, true, false, false, 0},         //.
+            /*2*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, true, false, false, 0},         //.
+            /*3*/ {" ", "", "", "", "", false, false, false, false, 1000.0, 6, 0, 0, 4000.0, 0.0, 100.0, false, false, false, 0}, //.
+            /*4*/ {" ", "", "", "", "", false, false, false, false, 1000.0, 6, 0, 0, 4000.0, 0.0, 100.0, false, false, false, 0}, //.
+            /*5*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, true, false, false, 0},         //.
+            /*6*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},        //.
+            /*7*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},        //.
+            /*8*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},        //.
+            /*9*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},        //.
+            /*10*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},       //.
+            /*11*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},       //.
+            /*12*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},       //.
+            /*13*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},       //.
+            /*14*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},       //.
+            /*15*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},       //.
+            /*16*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},       //.
+            /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},       //.
+            /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},       //.
+            /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 6, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},       //.
+            //
         },
-        // Экран 6 - Поворотники
+        // Экран 6 -
         {
-            /*0*/ {" ", "Поворотники", "", "", "", false, false, false, true, 10.0, 4, 0, 5, 0.0, 0.0, 0.0, false, false, false, 0},                        // Поворотники
-            /*1*/ {" ", "Время в откл состоянии", "", " мс", " ", true, false, true, false, 1000.0, 4, 0, 0, 4000.0, 0.0, 100.0, false, false, false, 0},   // Поворотники. Время в отключенном состоянии, мс
-            /*2*/ {" ", "Время в вкл. состоянии", "", " мс", " ", true, false, true, false, 1000.0, 4, 0, 0, 4000.0, 0.0, 100.0, false, false, false, 0},   // Поворотники. Время в включенном состоянии, мс
-            /*3*/ {" ", "Время выдачи звука на буззер", "", " мс", " ", true, false, true, false, 10.0, 4, 0, 0, 500.0, 0.0, 10.0, false, false, false, 0}, // Поворотники. Время выдачи звука на буззер, мс
-            /*4*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                                  // Поворотники.
-            /*5*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                                  // Поворотники.
-            /*6*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                                  // Поворотники.
-            /*7*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                                  // Поворотники.
-            /*8*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                                  // Поворотники.
-            /*9*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                                  // Поворотники.
-            /*10*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                                 // Поворотники.
-            /*11*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                                 // Поворотники.
-            /*12*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                                 // Поворотники.
-            /*13*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                                 // Поворотники.
-            /*14*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                                 // Поворотники.
-            /*15*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                                 // Поворотники.
-            /*16*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                                 // Поворотники.
-            /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                                 // Поворотники.
-            /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                                 // Поворотники.
-            /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},                                 // Поворотники.
-                                                                                                                                                            //
+            /*0*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 4, 5, 0.0, 0.0, 0.0, false, false, false, 0},      //
+            /*1*/ {" ", "", "", "", "", false, false, false, false, 500.0, 4, 0, 0, 1000.0, 0.0, 50.0, false, false, false, 0}, //.
+            /*2*/ {" ", "", "", "", "", false, false, false, false, 500.0, 4, 0, 0, 1000.0, 0.0, 50.0, false, false, false, 0}, //.
+            /*3*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 500.0, 0.0, 10.0, false, false, false, 0},   //.
+            /*4*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},      //.
+            /*5*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},      //.
+            /*6*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},      //.
+            /*7*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},      //.
+            /*8*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},      //.
+            /*9*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},      //.
+            /*10*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},     //.
+            /*11*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},     //.
+            /*12*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},     //.
+            /*13*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},     //.
+            /*14*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},     //.
+            /*15*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},     //.
+            /*16*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},     //.
+            /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},     //.
+            /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},     //.
+            /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},     //.
+            //
         },
         // Экран 7 -
         {
-            /*0*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 5, 0.0, 0.0, 0.0, false, false, false, 0},        //
-            /*1*/ {" ", "", "", "", "", false, false, false, false, 1000.0, 4, 0, 0, 4000.0, 0.0, 100.0, false, false, false, 0}, //.
-            /*2*/ {" ", "", "", "", "", false, false, false, false, 1000.0, 4, 0, 0, 4000.0, 0.0, 100.0, false, false, false, 0}, //.
-            /*3*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 500.0, 0.0, 10.0, false, false, false, 0},     //.
-            /*4*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},        //.
-            /*5*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},        //.
-            /*6*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},        //.
-            /*7*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},        //.
-            /*8*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},        //.
-            /*9*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},        //.
-            /*10*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},       //.
-            /*11*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},       //.
-            /*12*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},       //.
-            /*13*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},       //.
-            /*14*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},       //.
-            /*15*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},       //.
-            /*16*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},       //.
-            /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},       //.
-            /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},       //.
-            /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 4, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},       //.
-                                                                                                                                  //
+            /*0*/ {" ", "", "", "", "", false, false, false, false, 10.0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},  //
+            /*1*/ {" ", "", "", "", "", false, false, false, false, 10.0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},  //.
+            /*2*/ {" ", "", "", "", "", false, false, false, false, 10.0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},  //.
+            /*3*/ {" ", "", "", "", "", false, false, false, false, 10.0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},  //.
+            /*4*/ {" ", "", "", "", "", false, false, false, false, 10.0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},  //.
+            /*5*/ {" ", "", "", "", "", false, false, false, false, 10.0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},  //.
+            /*6*/ {" ", "", "", "", "", false, false, false, false, 10.0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},  //.
+            /*7*/ {" ", "", "", "", "", false, false, false, false, 10.0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},  //.
+            /*8*/ {" ", "", "", "", "", false, false, false, false, 10.0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},  //.
+            /*9*/ {" ", "", "", "", "", false, false, false, false, 10.0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},  //.
+            /*10*/ {" ", "", "", "", "", false, false, false, false, 10.0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
+            /*11*/ {" ", "", "", "", "", false, false, false, false, 10.0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
+            /*12*/ {" ", "", "", "", "", false, false, false, false, 10.0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
+            /*13*/ {" ", "", "", "", "", false, false, false, false, 10.0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
+            /*14*/ {" ", "", "", "", "", false, false, false, false, 10.0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
+            /*15*/ {" ", "", "", "", "", false, false, false, false, 10.0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
+            /*16*/ {" ", "", "", "", "", false, false, false, false, 10.0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
+            /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
+            /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
+            /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
+            //
         },
         // Экран 8 -
         {
@@ -219,7 +219,7 @@ StructStr Screens[MAX_QTY_SCR][MAX_STR] = // структура экрана
             /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
             /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
             /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
-                                                                                                                            //
+            //
         },
         // Экран 9 -
         {
@@ -243,7 +243,7 @@ StructStr Screens[MAX_QTY_SCR][MAX_STR] = // структура экрана
             /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},  //.
             /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},  //.
             /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0},  //.
-                                                                                                                             //
+            //
         },
         // Экран 10 -
         {
@@ -267,7 +267,7 @@ StructStr Screens[MAX_QTY_SCR][MAX_STR] = // структура экрана
             /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
             /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
             /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
-                                                                                                                            //
+            //
         },
         // Экран 11 -
         {
@@ -291,7 +291,7 @@ StructStr Screens[MAX_QTY_SCR][MAX_STR] = // структура экрана
             /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
             /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
             /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
-                                                                                                                            //
+            //
         },
         // Экран 12 -
         {
@@ -315,7 +315,7 @@ StructStr Screens[MAX_QTY_SCR][MAX_STR] = // структура экрана
             /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
             /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
             /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
-                                                                                                                            //
+            //
         },
         // Экран 13 -
         {
@@ -339,7 +339,7 @@ StructStr Screens[MAX_QTY_SCR][MAX_STR] = // структура экрана
             /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
             /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
             /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
-                                                                                                                            //
+            //
         },
         // Экран 14 -
         {
@@ -363,7 +363,7 @@ StructStr Screens[MAX_QTY_SCR][MAX_STR] = // структура экрана
             /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
             /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
             /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
-                                                                                                                            //
+            //
         },
         // Экран 15 -
         {
@@ -387,7 +387,7 @@ StructStr Screens[MAX_QTY_SCR][MAX_STR] = // структура экрана
             /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
             /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
             /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //.
-                                                                                                                            //
+            //
         },
         // Экран 16 -
         {
@@ -411,7 +411,7 @@ StructStr Screens[MAX_QTY_SCR][MAX_STR] = // структура экрана
             /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //
             /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //
             /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}  //
-                                                                                                                            //
+            //
         },
         // Экран 17 -
         {
@@ -435,7 +435,7 @@ StructStr Screens[MAX_QTY_SCR][MAX_STR] = // структура экрана
             /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //
             /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //
             /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}  //
-                                                                                                                            //
+            //
         },
         // Экран 18 -
         {
@@ -459,7 +459,7 @@ StructStr Screens[MAX_QTY_SCR][MAX_STR] = // структура экрана
             /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //
             /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //
             /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}  //
-                                                                                                                            //
+            //
         },
         // Экран 19 -
         {
@@ -483,7 +483,7 @@ StructStr Screens[MAX_QTY_SCR][MAX_STR] = // структура экрана
             /*17*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //
             /*18*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}, //
             /*19*/ {" ", "", "", "", "", false, false, false, false, 10.0, 1, 0, 0, 0.0, 0.0, 0.0, false, false, false, 0}  //
-                                                                                                                            //
+            //
         }
         //
 }; // Структура экранов

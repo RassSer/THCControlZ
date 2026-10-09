@@ -61,6 +61,7 @@
 #define NOM_PIN_ENC_TORIGHT 6 // номер Pin. Энкодер. Вправо
 #define NOM_PIN_ENC_BTN 3     // номер Pin. Энкодер. Кнопка
 #define NOM_PIN_BUZZER 4      // номер Pin. Буззер
+#define NOM_PIN_SLIDER 8      // номер Pin. Слайдер для выставления напряжения дуги
 
 #define MS_100 20  // милисекунды для моргания
 #define MS_300 20  // милисекунды для моргания
@@ -76,8 +77,8 @@ THCState currentState = IDLE;
 uint16_t FregTest;
 // Настройки допуска и скорости
 const int CENTER_VAL = 140; // Центральная точка (12-бит АЦП: 0 - 4095)
-const int TOLERANCE = 3;   // Допуск (зона нечувствительности)
-const int MAX_SPEED = 4000;  // Максимальная скорость мотора (шагов/сек)
+const int TOLERANCE = 3;    // Допуск (зона нечувствительности)
+const int MAX_SPEED = 4000; // Максимальная скорость мотора (шагов/сек)
 
 Encoder Enc(NOM_PIN_ENC_TOLEFT, NOM_PIN_ENC_TORIGHT, -1, TYPE2); // объявим энкодер класс
 
@@ -92,37 +93,20 @@ Screen ArrScr(3); // класс экранов
 //------------------------------------------------------------
 struct StructRef
 {
-  float &TOil = Screens[0][0].Param;      // Ссылка. Т масла. Т масла
-  float &TWater = Screens[0][1].Param;    // Ссылка. Т воды. Т воды
-  float &TOutside = Screens[0][2].Param;  // Ссылка. Темп. нар. воздуха
-  float &RPMEngine = Screens[3][0].Param; // Ссылка. Обороты двигателя, об/мин. Обороты двигателя, об/мин
-  float &Velosity = Screens[4][0].Param;  // Ссылка. Скорость, км/час. Скорость, км/час
+  float &DeltaVoltage = Screens[0][2].Param; // Ссылка. Заданное напряжение, В. Дельта напряжения, В
+  float &Sensitivity = Screens[0][3].Param;  // Ссылка. Заданное напряжение, В. Чувствительность, 50-100%
 
-  float &TOilVentStart = Screens[1][1].Param;   // Ссылка. Т масла. T Включения
-  float &TOilVentStop = Screens[1][2].Param;    // Ссылка. Т масла. T Отключения
-  float &TOilMinRPMStart = Screens[1][3].Param; // Ссылка. Т масла. Мин. скорость
-  float &TOilTMaxRPM = Screens[1][4].Param;     // Ссылка. Т масла. Максимальная температура, при которой максимаотная скорость вентилятора
+  float &TechMaxVoltagePotenciometr = Screens[1][1].Param; // Ссылка. Заданное напряжение, В. Технический максимум напряжения, при макс значении на потенциометре, В
+  float &TechMinVoltagePotenciometr = Screens[1][2].Param; // Ссылка. Заданное напряжение, В. Технический минимум напряжения, при мин значении на потенциометре, В
+  float &MinVoltageControlZ = Screens[1][3].Param;         // Ссылка. Заданное напряжение, В. Минимальное напряжение выше которого идет контроль оси Z
 
-  float &TWaterVent1Start = Screens[2][1].Param;       // Ссылка. Т воды. T Включения 1ого вент
-  float &TWaterVent1Stop = Screens[2][2].Param;        // Ссылка. Т воды. T Отключения 1ого вент
-  float &TWaterVent1MinRPMStart = Screens[2][3].Param; // Ссылка. Т воды. Мин. Скорость 1ого вент
-  float &TWaterVent1TMaxRPM = Screens[2][4].Param;     // Ссылка. Т воды. Максимальная температура, при которой максимаотная скорость вентилятора
+  float &StepAngle = Screens[2][1].Param;    // Ссылка. Скорость, 50-100%. Угол шага, °
+  float &Acceleration = Screens[2][2].Param; // Ссылка. Скорость, 50-100%. Ускорение
+  float &MaxSpeed = Screens[2][3].Param;     // Ссылка. Скорость, 50-100%. Максимальная скорость, об/мин
+  float &MinSpeed = Screens[2][4].Param;     // Ссылка. Скорость, 50-100%. Минимальная скорость, об/мин
 
-  bool &RPMEngineVisuMiniDisplay = Screens[3][1].BoolParam; // Ссылка. Обороты двигателя, об/мин. Отображать на маленьком дисплее
-  float &RPMEngineKoefMul = Screens[3][2].Param;            // Ссылка. Обороты двигателя, об/мин. Коэффициент домножения
-
-  bool &VelocityVisuMiniDisplay = Screens[4][1].BoolParam; // Ссылка. Скорость, км/час. Отображать на маленьком дисплее
-  float &VelocityDiamWheel = Screens[4][2].Param;          // Ссылка. Скорость, км/час. Диаметр колеса, см
-  float &VelocityKoefReduction = Screens[4][3].Param;      // Ссылка. Скорость, км/час. Редукция на мосте
-  float &VelocityKoefMul = Screens[4][4].Param;            // Ссылка. Скорость, км/час. Коэффициент домножения
-
-  bool &BlinkStart = Screens[5][2].BoolParam;    // Ссылка. Настройки. Моргание стробосками и поворотниками при старте
-  float &TimeStrobOnStart = Screens[5][3].Param; // Ссылка. Настройки. Время включения стробоскопов, мсек
-  float &TimeTurnOnStart = Screens[5][4].Param;  // Ссылка. Настройки. Время вкл.поворотников, мсек
-
-  float &TimeTurnOn = Screens[6][1].Param;       // Ссылка. Поворотники. Время в отключенном состоянии, мс
-  float &TimeTurnOff = Screens[6][2].Param;      // Ссылка. Поворотники. Время в включенном состоянии, мс
-  float &TimeTurnOnBuzzer = Screens[6][3].Param; // Ссылка. Поворотники. Время выдачи звука на буззер, мс
+  float &TimePiercing = Screens[3][1].Param;       // Ссылка. Временные задержки. Время пробития, мс
+  float &TimeBeforeControlZ = Screens[3][2].Param; // Ссылка. Временные задержки. Время перед началом контроля Z, мс
 };
 //------------------------------------------------------------
 StructRef Ref;
@@ -133,31 +117,20 @@ StructRef Ref;
 //------------------------------------------------------------
 struct StructForMem
 {
-  float TOilVentStart;   // Т масла. T Включения
-  float TOilVentStop;    // Т масла. T Отключения
-  float TOilMinRPMStart; // Т масла. Мин. скорость
-  float TOilTMaxRPM;     // Т масла. Максимальная температура, при которой максимаотная скорость вентилятора
+  float DeltaVoltage; //. Дельта напряжения, В
+  float Sensitivity;  //. Чувствительность, 50-100%
 
-  float TWaterVent1Start;       // Т воды. T Включения 1ого вент
-  float TWaterVent1Stop;        // Т воды. T Отключения 1ого вент
-  float TWaterVent1MinRPMStart; // Т воды. Мин. Скорость 1ого вент
-  float TWaterVent1TMaxRPM;     // Т воды. Максимальная температура, при которой максимаотная скорость вентилятора
+  float TechMaxVoltagePotenciometr; // Заданное напряжение, В. Технический максимум напряжения, при макс значении на потенциометре, В
+  float TechMinVoltagePotenciometr; // Заданное напряжение, В. Технический минимум напряжения, при мин значении на потенциометре, В
+  float MinVoltageControlZ;         // Заданное напряжение, В. Минимальное напряжение выше которого идет контроль оси Z
 
-  bool RPMEngineVisuMiniDisplay; // Обороты двигателя, об/мин. Отображать на маленьком дисплее
-  float RPMEngineKoefMul;        // Обороты двигателя, об/мин. Коэффициент домножения
+  float StepAngle;    // Скорость, 50-100%. Угол шага, °
+  float Acceleration; // Скорость, 50-100%. Ускорение
+  float MaxSpeed;     // Скорость, 50-100%. Максимальная скорость, об/мин
+  float MinSpeed;     // Скорость, 50-100%. Минимальная скорость, об/мин
 
-  bool VelocityVisuMiniDisplay; // Скорость, км/час. Отображать на маленьком дисплее
-  float VelocityDiamWheel;      // Скорость, км/час. Диаметр колеса, см
-  float VelocityKoefReduction;  // Скорость, км/час. Редукция на мосте
-  float VelocityKoefMul;        // Скорость, км/час. Коэффициент домножения
-
-  bool BlinkStart;        // Настройки. Моргание стробосками и поворотниками при старте
-  float TimeStrobOnStart; // Настройки. Время включения стробоскопов, мсек
-  float TimeTurnOnStart;  // Настройки. Время вкл.поворотников, мсек
-
-  float TimeTurnOn;       // Поворотники. Время в отключенном состоянии, мс
-  float TimeTurnOff;      // Поворотники. Время в включенном состоянии, мс
-  float TimeTurnOnBuzzer; // Поворотники. Время выдачи звука на буззер, мс
+  float TimePiercing;       // Временные задержки. Время пробития, мс
+  float TimeBeforeControlZ; // Временные задержки. Время перед началом контроля Z, мс
 };
 
 StructForMem FlashMemory;      // объявляем структуру для запоминания в памяти
@@ -169,9 +142,9 @@ DIn BtnEnc{false, DEFAULT_TIME_BOUNCE_BTN_MS}; // класс. Кнопка эн�
 DIn TorchOn(false, DEFAULT_TIME_BOUNCE_BTN_MS); // класс. Сигнал включения дуги
 
 AIn AInArcVoltage; // Аналоговый вход. Напряжение дуги
-AIN AInSetVoltage; // Аналоговый вход. Задатчик напряжения дуги
+AIn AInSetVoltage; // Аналоговый вход. Задатчик напряжения дуги
 
-float ArcVoltage;  // Напряжение дуги
+float ArcVoltage; // Напряжение дуги
 
 FastAccelStepperEngine engine = FastAccelStepperEngine();
 FastAccelStepper *stepper = NULL;
@@ -196,6 +169,7 @@ void TestLive();   // Функция для показания что жив CPU
 void ReservMemoryForScrDisplay();
 
 TON TmrPiercing;          // Таймер задержки пробивки металла
+TON TmrBeforeControlZ;    // Таймер задержки перед началом контроля напряжения на оси Z
 TaskHandle_t TaskDisplay; // Задача 1
 TaskHandle_t Task2;       // Задача 2
 TaskHandle_t TaskESPNow;  // Задача ESP-NOW
@@ -305,7 +279,6 @@ void setup_stepper()
     // Аппаратный разгон NEMA 23 (шагов/сек^2) — чтобы не было клина при резкой смене направления
     stepper->setAcceleration(8000);
   }
-
 }
 // ------------------------------------------------------------------ ИЗМЕРЕНИЕ
 // Возвращает true, если частота обновилась.
@@ -418,6 +391,7 @@ void setup()
   digitalWrite(PIN_ARC_OK_OUTPUT, LOW);
   digitalWrite(PIN_RELAY_SELECT, LOW);
   digitalWrite(THC_Z_STEP_PIN, LOW);
+  AInSetVoltage.InitUnreliability(50, 8100); // Проиницилизируем диапазон недостоверности слайдера
   setup_stepper();
 
   Serial.print("Свободно памяти: ");
@@ -481,8 +455,8 @@ void loop()
       Volt = 79.4678 * g_freqHz / 1000.0f + 20.1050;
     }
 
-    AInArcVoltage._KoeffFiltr = 3000;
-    ArcVoltage = AInArcVoltage.Filtr1th(Volt);
+    AInArcVoltage._KoeffFiltr = map(Ref.Sensitivity, 0, 10000.0, 0, 100.0); // переведем коэфициент фильтрации из % в 0-10000
+    ArcVoltage = AInArcVoltage.Filtr1th(Volt);                              // вызываем функцию фильтрации напряяжения дуги
 
     Serial.printf("F = %10.3f Hz | Напряжение = %9.2f | N = %-6u | events = %u\n",
                   g_freqHz, ArcVoltage, s_N, s_events);
@@ -512,9 +486,9 @@ void TaskDisplayCicle(void *pvParameters)
     //------------------------------------------------------------
     // возврат к заводским настройкам
     //------------------------------------------------------------
-    if (Screens[5][5].ExitFromParam and Screens[5][5].BoolParam) // при выходе из параметра возврата к заводским настройкам
+    if (Screens[0][7].ExitFromParam and Screens[0][7].BoolParam) // при выходе из параметра возврата к заводским настройкам
     {
-      Screens[5][5].BoolParam = false;
+      Screens[0][7].BoolParam = false;
       SaveValueToFlash(true, false);
     }
     Display();
@@ -546,6 +520,9 @@ void TaskESPNowCicle(void *pvParameters)
 //------------------------------------------------------------
 void Display()
 {
+  float CurrentSpeedHZ = stepper->getCurrentSpeedInMilliHz() / 1000.0;                   // Переводим миллиГерцы в нормальные импульсы в секунду (Гц)
+  Screens[2][0].Param = Screens[0][4].Param = (CurrentSpeedHZ * Ref.StepAngle) / 60.0; // Для отображения скорости об/мин
+
   // oled.setCursor(0, 0);
   for (x = 0; x < MAX_STR_DISPLAY; x++)
   {
@@ -579,9 +556,13 @@ void Task2code(void *pvParameters)
     ;
     // // TestLive();
 
-    bool torchOnSignal = TorchOn.ReadDIn(); // Считываем сигнал включения дуги
+    bool torchOnSignal = TorchOn.ReadDIn();                                                                             // Считываем сигнал включения дуги
+    AInSetVoltage.Init(NOM_PIN_SLIDER, 3000, 50, 8100, Ref.TechMinVoltagePotenciometr, Ref.TechMaxVoltagePotenciometr); // каждый раз переинициализируем в зависимости от значений миниммума максимума
+    AInSetVoltage.Value();                                                                                              // Считываем значение слайдера
+
     torchOnSignal = true;
-    TmrPiercing.TONTmr(currentState == PIERCING, PIERCE_DELAY_MS); // Запускаем таймер задержки после пробивки металла
+    TmrPiercing.TONTmr(currentState == PIERCING, Ref.TimePiercing);                   // Запускаем таймер задержки после пробивки металла
+    TmrBeforeControlZ.TONTmr(currentState == ACTIVE_CUTTING, Ref.TimeBeforeControlZ); // Запускаем таймер задержки перед началом контроля Z
 
     switch (currentState)
     {
@@ -645,38 +626,39 @@ void Task2code(void *pvParameters)
     // Serial.println(FregTest);
 
     // Считаем отклонение от центральной точки
-    int deviation = currentArcVoltage - CENTER_VAL;
+    int deviation = currentArcVoltage - AInSetVoltage.QValue;
 
-    //deviation = FregTest - CENTER_VAL;
+    // deviation = FregTest - CENTER_VAL;
 
     // Проверяем, вышли ли мы за пределы допуска (TOLERANCE)
-    if (abs(deviation) > TOLERANCE)
+    if (abs(deviation) > Ref.DeltaVoltage)
     {
-
       // Карта скорости: чем больше отклонение, тем выше частота импульсов ШИМ
-      long targetSpeed = map(abs(deviation), TOLERANCE, 2048, 200, MAX_SPEED);
-      targetSpeed = constrain(targetSpeed, 0, MAX_SPEED);
+      long SetSpeedRPM = map(abs(deviation), Ref.DeltaVoltage, 20.0, Ref.MinSpeed, Ref.MaxSpeed); // получим значение скорости от напряжения дуги (чем дальше - тем выше скорость)
+      SetSpeedRPM = constrain(SetSpeedRPM, 0, Ref.MaxSpeed);                                      // обрежем скорость, если выше максимальной
 
-      Serial.print("targetSpeed = ");
-      Serial.println(targetSpeed);
+      float ImpPerSec = 60.0 * SetSpeedRPM / Ref.StepAngle; // Пересчет количество импульсов/секунду из об/мин
 
-     stepper->setSpeedInHz(targetSpeed); // Меняем частоту на лету (аппаратно)
+      Serial.print("ImpPerSec = ");
+      Serial.println(ImpPerSec);
 
-        if (deviation > 0)
-        {
-          // Сигнал ушел вверх — крутим вперед бесконечным аппаратным ШИМ с разгоном
-          stepper->runForward();
-        }
-        else
-        {
-          // Сигнал ушел вниз — крутим назад
-          stepper->runBackward();
-        }
+      stepper->setSpeedInHz(ImpPerSec); // Меняем частоту на лету (аппаратно)
+
+      if (deviation > 0)
+      {
+        // Сигнал ушел вверх — крутим вперед бесконечным аппаратным ШИМ с разгоном
+        stepper->runForward();
       }
       else
       {
-        // Сигнал внутри допуска — даем команду аппаратного плавного торможения
-        stepper->stopMove();
+        // Сигнал ушел вниз — крутим назад
+        stepper->runBackward();
+      }
+    }
+    else
+    {
+      // Сигнал внутри допуска — даем команду аппаратного плавного торможения
+      stepper->stopMove();
     }
 
     BtnEnc.ReadDIn();
@@ -749,92 +731,59 @@ void SaveValueToFlash(bool DefaultValue, bool FirstScan)
     // проиницилизируем, если первый запуск
     if ((ResultMemory == 0) or (ResultMemory == 1)) // если удачная работа функции
     {
-      Ref.TOilVentStart = FlashMemory.TOilVentStart;     // Т масла. T Включения
-      Ref.TOilVentStop = FlashMemory.TOilVentStop;       // Т масла. T Отключения
-      Ref.TOilMinRPMStart = FlashMemory.TOilMinRPMStart; // Т масла. Мин. скорость
-      Ref.TOilTMaxRPM = FlashMemory.TOilTMaxRPM;         // Т масла. Максимальная температура, при которой максимаотная скорость вентилятора
+      Ref.DeltaVoltage = FlashMemory.DeltaVoltage; // Заданное напряжение, В. Дельта напряжения, В
+      Ref.Sensitivity = FlashMemory.Sensitivity;   // Заданное напряжение, В. Чувствительность, 50-100%
 
-      Ref.TWaterVent1Start = FlashMemory.TWaterVent1Start;             // Т воды. T Включения 1ого вент
-      Ref.TWaterVent1Stop = FlashMemory.TWaterVent1Stop;               // Т воды. T Отключения 1ого вент
-      Ref.TWaterVent1MinRPMStart = FlashMemory.TWaterVent1MinRPMStart; // Т воды. Мин. Скорость 1ого вент
-      Ref.TWaterVent1TMaxRPM = FlashMemory.TWaterVent1TMaxRPM;         // Т воды. Максимальная температура, при которой максимаотная скорость вентилятора
+      Ref.TechMaxVoltagePotenciometr = FlashMemory.TechMaxVoltagePotenciometr; // Заданное напряжение, В. Технический максимум напряжения, при макс значении на потенциометре, В
+      Ref.TechMinVoltagePotenciometr = FlashMemory.TechMinVoltagePotenciometr; // Заданное напряжение, В. Технический минимум напряжения, при мин значении на потенциометре, В
+      Ref.MinVoltageControlZ = FlashMemory.MinVoltageControlZ;                 // Заданное напряжение, В. Минимальное напряжение выше которого идет контроль оси Z
 
-      Ref.RPMEngineVisuMiniDisplay = FlashMemory.RPMEngineVisuMiniDisplay; // Обороты двигателя, об/мин. Отображать на маленьком дисплее
-      Ref.RPMEngineKoefMul = FlashMemory.RPMEngineKoefMul;                 // Обороты двигателя, об/мин. Коэффициент домножения
+      Ref.StepAngle = FlashMemory.StepAngle;       // Скорость, 50-100%. Угол шага, °
+      Ref.Acceleration = FlashMemory.Acceleration; // Скорость, 50-100%. Ускорение
+      Ref.MaxSpeed = FlashMemory.MaxSpeed;         // Скорость, 50-100%. Максимальная скорость, об/мин
+      Ref.MinSpeed = FlashMemory.MinSpeed;         // Скорость, 50-100%. Минимальная скорость, об/мин
 
-      Ref.VelocityVisuMiniDisplay = FlashMemory.VelocityVisuMiniDisplay; // Скорость, км/час. Отображать на маленьком дисплее
-      Ref.VelocityDiamWheel = FlashMemory.VelocityDiamWheel;             // Скорость, км/час. Диаметр колеса, см
-      Ref.VelocityKoefReduction = FlashMemory.VelocityKoefReduction;     // Скорость, км/час. Редукция на мосте
-      Ref.VelocityKoefMul = FlashMemory.VelocityKoefMul;                 // Скорость, км/час. Коэффициент домножения
-
-      Ref.BlinkStart = FlashMemory.BlinkStart;             // Настройки. Моргание стробосками и поворотниками при старте
-      Ref.TimeStrobOnStart = FlashMemory.TimeStrobOnStart; // Настройки. Время включения стробоскопов, мсек
-      Ref.TimeTurnOnStart = FlashMemory.TimeTurnOnStart;   // Настройки. Время вкл.поворотников, мсек
-
-      Ref.TimeTurnOn = FlashMemory.TimeTurnOn;             // Поворотники. Время в отключенном состоянии, мс
-      Ref.TimeTurnOff = FlashMemory.TimeTurnOff;           // Поворотники. Время в включенном состоянии, мс
-      Ref.TimeTurnOnBuzzer = FlashMemory.TimeTurnOnBuzzer; // Поворотники. Время выдачи звука на буззер, мс
+      Ref.TimePiercing = FlashMemory.TimePiercing;             // Временные задержки. Время пробития, мс
+      Ref.TimeBeforeControlZ = FlashMemory.TimeBeforeControlZ; // Временные задержки. Время перед началом контроля Z, мс
     }
   }
   else if (DefaultValue) // инициализация значениями по умолчанию
   {
     DefaultValueInit();
 
-    Ref.TOilVentStart = FlashMemory.TOilVentStart;     // Т масла. T Включения
-    Ref.TOilVentStop = FlashMemory.TOilVentStop;       // Т масла. T Отключения
-    Ref.TOilMinRPMStart = FlashMemory.TOilMinRPMStart; // Т масла. Мин. скорость
-    Ref.TOilTMaxRPM = FlashMemory.TOilTMaxRPM;         // Т масла. Максимальная температура, при которой максимаотная скорость вентилятора
+    Ref.DeltaVoltage = FlashMemory.DeltaVoltage; // Заданное напряжение, В. Дельта напряжения, В
+    Ref.Sensitivity = FlashMemory.Sensitivity;   // Заданное напряжение, В. Чувствительность, 50-100%
 
-    Ref.TWaterVent1Start = FlashMemory.TWaterVent1Start;             // Т воды. T Включения 1ого вент
-    Ref.TWaterVent1Stop = FlashMemory.TWaterVent1Stop;               // Т воды. T Отключения 1ого вент
-    Ref.TWaterVent1MinRPMStart = FlashMemory.TWaterVent1MinRPMStart; // Т воды. Мин. Скорость 1ого вент
-    Ref.TWaterVent1TMaxRPM = FlashMemory.TWaterVent1TMaxRPM;         // Т воды. Максимальная температура, при которой максимаотная скорость вентилятора
+    Ref.TechMaxVoltagePotenciometr = FlashMemory.TechMaxVoltagePotenciometr; // Заданное напряжение, В. Технический максимум напряжения, при макс значении на потенциометре, В
+    Ref.TechMinVoltagePotenciometr = FlashMemory.TechMinVoltagePotenciometr; // Заданное напряжение, В. Технический минимум напряжения, при мин значении на потенциометре, В
+    Ref.MinVoltageControlZ = FlashMemory.MinVoltageControlZ;                 // Заданное напряжение, В. Минимальное напряжение выше которого идет контроль оси Z
 
-    Ref.RPMEngineVisuMiniDisplay = FlashMemory.RPMEngineVisuMiniDisplay; // Обороты двигателя, об/мин. Отображать на маленьком дисплее
-    Ref.RPMEngineKoefMul = FlashMemory.RPMEngineKoefMul;                 // Обороты двигателя, об/мин. Коэффициент домножения
+    Ref.StepAngle = FlashMemory.StepAngle;       // Скорость, 50-100%. Угол шага, °
+    Ref.Acceleration = FlashMemory.Acceleration; // Скорость, 50-100%. Ускорение
+    Ref.MaxSpeed = FlashMemory.MaxSpeed;         // Скорость, 50-100%. Максимальная скорость, об/мин
+    Ref.MinSpeed = FlashMemory.MinSpeed;         // Скорость, 50-100%. Минимальная скорость, об/мин
 
-    Ref.VelocityVisuMiniDisplay = FlashMemory.VelocityVisuMiniDisplay; // Скорость, км/час. Отображать на маленьком дисплее
-    Ref.VelocityDiamWheel = FlashMemory.VelocityDiamWheel;             // Скорость, км/час. Диаметр колеса, см
-    Ref.VelocityKoefReduction = FlashMemory.VelocityKoefReduction;     // Скорость, км/час. Редукция на мосте
-    Ref.VelocityKoefMul = FlashMemory.VelocityKoefMul;                 // Скорость, км/час. Коэффициент домножения
-
-    Ref.BlinkStart = FlashMemory.BlinkStart;             // Настройки. Моргание стробосками и поворотниками при старте
-    Ref.TimeStrobOnStart = FlashMemory.TimeStrobOnStart; // Настройки. Время включения стробоскопов, мсек
-    Ref.TimeTurnOnStart = FlashMemory.TimeTurnOnStart;   // Настройки. Время вкл.поворотников, мсек
-
-    Ref.TimeTurnOn = FlashMemory.TimeTurnOn;             // Поворотники. Время в отключенном состоянии, мс
-    Ref.TimeTurnOff = FlashMemory.TimeTurnOff;           // Поворотники. Время в включенном состоянии, мс
-    Ref.TimeTurnOnBuzzer = FlashMemory.TimeTurnOnBuzzer; // Поворотники. Время выдачи звука на буззер, мс
-    // Memory.updateNow();                                  // запишем во флэш памяти
+    Ref.TimePiercing = FlashMemory.TimePiercing;             // Временные задержки. Время пробития, мс
+    Ref.TimeBeforeControlZ = FlashMemory.TimeBeforeControlZ; // Временные задержки. Время перед началом контроля Z, мс
+                                                             //  Memory.updateNow();                                  // запишем во флэш памяти
   }
   else // просто сохраним во флэш память
   {
-    FlashMemory.TOilVentStart = Ref.TOilVentStart;     // Т масла. T Включения
-    FlashMemory.TOilVentStop = Ref.TOilVentStop;       // Т масла. T Отключения
-    FlashMemory.TOilMinRPMStart = Ref.TOilMinRPMStart; // Т масла. Мин. скорость
-    FlashMemory.TOilTMaxRPM = Ref.TOilTMaxRPM;         // Т масла. Максимальная температура, при которой максимаотная скорость вентилятора
+    FlashMemory.DeltaVoltage = Ref.DeltaVoltage; // Заданное напряжение, В. Дельта напряжения, В
+    FlashMemory.Sensitivity = Ref.Sensitivity;   // Заданное напряжение, В. Чувствительность, 50-100%
 
-    FlashMemory.TWaterVent1Start = Ref.TWaterVent1Start;             // Т воды. T Включения 1ого вент
-    FlashMemory.TWaterVent1Stop = Ref.TWaterVent1Stop;               // Т воды. T Отключения 1ого вент
-    FlashMemory.TWaterVent1MinRPMStart = Ref.TWaterVent1MinRPMStart; // Т воды. Мин. Скорость 1ого вент
-    FlashMemory.TWaterVent1TMaxRPM = Ref.TWaterVent1TMaxRPM;         // Т воды. Максимальная температура, при которой максимаотная скорость вентилятора
+    FlashMemory.TechMaxVoltagePotenciometr = Ref.TechMaxVoltagePotenciometr; // Заданное напряжение, В. Технический максимум напряжения, при макс значении на потенциометре, В
+    FlashMemory.TechMinVoltagePotenciometr = Ref.TechMinVoltagePotenciometr; // Заданное напряжение, В. Технический минимум напряжения, при мин значении на потенциометре, В
+    FlashMemory.MinVoltageControlZ = Ref.MinVoltageControlZ;                 // Заданное напряжение, В. Минимальное напряжение выше которого идет контроль оси Z
 
-    FlashMemory.RPMEngineVisuMiniDisplay = Ref.RPMEngineVisuMiniDisplay; // Обороты двигателя, об/мин. Отображать на маленьком дисплее
-    FlashMemory.RPMEngineKoefMul = Ref.RPMEngineKoefMul;                 // Обороты двигателя, об/мин. Коэффициент домножения
+    FlashMemory.StepAngle = Ref.StepAngle;       // Скорость, 50-100%. Угол шага, °
+    FlashMemory.Acceleration = Ref.Acceleration; // Скорость, 50-100%. Ускорение
+    FlashMemory.MaxSpeed = Ref.MaxSpeed;         // Скорость, 50-100%. Максимальная скорость, об/мин
+    FlashMemory.MinSpeed = Ref.MinSpeed;         // Скорость, 50-100%. Минимальная скорость, об/мин
 
-    FlashMemory.VelocityVisuMiniDisplay = Ref.VelocityVisuMiniDisplay; // Скорость, км/час. Отображать на маленьком дисплее
-    FlashMemory.VelocityDiamWheel = Ref.VelocityDiamWheel;             // Скорость, км/час. Диаметр колеса, см
-    FlashMemory.VelocityKoefReduction = Ref.VelocityKoefReduction;     // Скорость, км/час. Редукция на мосте
-    FlashMemory.VelocityKoefMul = Ref.VelocityKoefMul;                 // Скорость, км/час. Коэффициент домножения
-
-    FlashMemory.BlinkStart = Ref.BlinkStart;             // Настройки. Моргание стробосками и поворотниками при старте
-    FlashMemory.TimeStrobOnStart = Ref.TimeStrobOnStart; // Настройки. Время включения стробоскопов, мсек
-    FlashMemory.TimeTurnOnStart = Ref.TimeTurnOnStart;   // Настройки. Время вкл.поворотников, мсек
-
-    FlashMemory.TimeTurnOn = Ref.TimeTurnOn;             // Поворотники. Время в отключенном состоянии, мс
-    FlashMemory.TimeTurnOff = Ref.TimeTurnOff;           // Поворотники. Время в включенном состоянии, мс
-    FlashMemory.TimeTurnOnBuzzer = Ref.TimeTurnOnBuzzer; // Поворотники. Время выдачи звука на буззер, мс
-    Memory.updateNow();                                  // запишем во флэш памяти
+    FlashMemory.TimePiercing = Ref.TimePiercing;             // Временные задержки. Время пробития, мс
+    FlashMemory.TimeBeforeControlZ = Ref.TimeBeforeControlZ; // Временные задержки. Время перед началом контроля Z, мс
+    Memory.updateNow();                                      // запишем во флэш памяти
   }
 }
 
@@ -899,30 +848,19 @@ void ReservMemoryForScrDisplay()
 //------------------------------------------------------------
 void DefaultValueInit()
 {
-  FlashMemory.TOilVentStart = 82.0;   // Т масла. T Включения
-  FlashMemory.TOilVentStop = 80.0;    // Т масла. T Отключения
-  FlashMemory.TOilMinRPMStart = 50.0; // Т масла. Мин. скорость
-  FlashMemory.TOilTMaxRPM = 100.0;    // Т масла. Максимальная температура, при которой максимаотная скорость вентилятора
+  FlashMemory.DeltaVoltage = 3.0;  // Заданное напряжение, В. Дельта напряжения, В
+  FlashMemory.Sensitivity = 100.0; // Заданное напряжение, В. Чувствительность, 50-100%
 
-  FlashMemory.TWaterVent1Start = 82.0;       // Т воды. T Включения 1ого вент
-  FlashMemory.TWaterVent1Stop = 80.0;        // Т воды. T Отключения 1ого вент
-  FlashMemory.TWaterVent1MinRPMStart = 50.0; // Т воды. Мин. Скорость 1ого вент
-  FlashMemory.TWaterVent1TMaxRPM = 100.0;    // Т воды. Максимальная температура, при которой максимаотная скорость вентилятора
+  FlashMemory.TechMaxVoltagePotenciometr = 200.0; // Заданное напряжение, В. Технический максимум напряжения, при макс значении на потенциометре, В
+  FlashMemory.TechMinVoltagePotenciometr = 100.0; // Заданное напряжение, В. Технический минимум напряжения, при мин значении на потенциометре, В
+  FlashMemory.MinVoltageControlZ = 30.0;          // Заданное напряжение, В. Минимальное напряжение выше которого идет контроль оси Z
 
-  FlashMemory.RPMEngineVisuMiniDisplay = true; // Обороты двигателя, об/мин. Отображать на маленьком дисплее
-  FlashMemory.RPMEngineKoefMul = 1.0;          // Обороты двигателя, об/мин. Коэффициент домножения
+  FlashMemory.StepAngle = 1.8;     // Скорость, 50-100%. Угол шага, °
+  FlashMemory.Acceleration = 80.0; // Скорость, 50-100%. Ускорение
+  FlashMemory.MaxSpeed = 1200.0;   // Скорость, 50-100%. Максимальная скорость, об/мин
+  FlashMemory.MinSpeed = 100.0;    // Скорость, 50-100%. Минимальная скорость, об/мин
 
-  FlashMemory.VelocityVisuMiniDisplay = true; // Скорость, км/час. Отображать на маленьком дисплее
-  FlashMemory.VelocityDiamWheel = 75.0;       // Скорость, км/час. Диаметр колеса, см
-  FlashMemory.VelocityKoefReduction = 3.0;    // Скорость, км/час. Редукция на мосте
-  FlashMemory.VelocityKoefMul = 1.0;          // Скорость, км/час. Коэффициент домножения
-
-  FlashMemory.BlinkStart = true;         // Настройки. Моргание стробосками и поворотниками при старте
-  FlashMemory.TimeStrobOnStart = 1000.0; // Настройки. Время включения стробоскопов, мсек
-  FlashMemory.TimeTurnOnStart = 1000.0;  // Настройки. Время вкл.поворотников, мсек
-
-  FlashMemory.TimeTurnOn = 500.0;      // Поворотники. Время в отключенном состоянии, мс
-  FlashMemory.TimeTurnOff = 500.0;     // Поворотники. Время в включенном состоянии, мс
-  FlashMemory.TimeTurnOnBuzzer = 50.0; // Поворотники. Время выдачи звука на буззер, мс
+  FlashMemory.TimePiercing = 100.0;     // Временные задержки. Время пробития, мс
+  FlashMemory.TimeBeforeControlZ = 3.0; // Временные задержки. Время перед началом контроля Z, мс
 }
 //------------------------------------------------------------
