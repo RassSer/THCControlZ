@@ -458,8 +458,8 @@ void loop()
     AInArcVoltage._KoeffFiltr = map(Ref.Sensitivity, 0, 10000.0, 0, 100.0); // переведем коэфициент фильтрации из % в 0-10000
     ArcVoltage = AInArcVoltage.Filtr1th(Volt);                              // вызываем функцию фильтрации напряяжения дуги
 
-    Serial.printf("F = %10.3f Hz | Напряжение = %9.2f | N = %-6u | events = %u\n",
-                  g_freqHz, ArcVoltage, s_N, s_events);
+    // Serial.printf("F = %10.3f Hz | Напряжение = %9.2f | N = %-6u | events = %u\n",
+    //               g_freqHz, ArcVoltage, s_N, s_events);
   }
   vTaskDelay(pdMS_TO_TICKS(1));
 }
@@ -520,7 +520,7 @@ void TaskESPNowCicle(void *pvParameters)
 //------------------------------------------------------------
 void Display()
 {
-  float CurrentSpeedHZ = stepper->getCurrentSpeedInMilliHz() / 1000.0;                   // Переводим миллиГерцы в нормальные импульсы в секунду (Гц)
+  float CurrentSpeedHZ = stepper->getCurrentSpeedInMilliHz() / 1000.0;                 // Переводим миллиГерцы в нормальные импульсы в секунду (Гц)
   Screens[2][0].Param = Screens[0][4].Param = (CurrentSpeedHZ * Ref.StepAngle) / 60.0; // Для отображения скорости об/мин
 
   // oled.setCursor(0, 0);
@@ -639,8 +639,17 @@ void Task2code(void *pvParameters)
 
       float ImpPerSec = 60.0 * SetSpeedRPM / Ref.StepAngle; // Пересчет количество импульсов/секунду из об/мин
 
+        
+      Serial.println("========");
+      Serial.print("Ref.DeltaVoltage = ");
+      Serial.println(Ref.DeltaVoltage);
+      Serial.print("AInSetVoltage.QValue = ");
+      Serial.println(AInSetVoltage.QValue);
+      Serial.print("SetSpeedRPM = ");
+      Serial.println(SetSpeedRPM);
       Serial.print("ImpPerSec = ");
       Serial.println(ImpPerSec);
+      Serial.println("");
 
       stepper->setSpeedInHz(ImpPerSec); // Меняем частоту на лету (аппаратно)
 
@@ -698,7 +707,7 @@ void Task2code(void *pvParameters)
     DOut();
     //------------------------------------------------------------
     FirstScan = false; // признак первого скана
-    delay(5);
+    delay(50);
   }
   vTaskDelete(NULL);
 }
